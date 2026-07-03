@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, photoUrl } from '../api'
+import { IconPlus, IconPin } from '../icons'
 
 const STATUSES = ['available', 'lent_out', 'lost', 'needs_repair']
 const STATUS_LABEL = { available: 'Available', lent_out: 'Lent out', lost: 'Lost', needs_repair: 'Needs repair' }
@@ -59,8 +60,10 @@ export default function Items() {
   return (
     <div>
       <div className="head-row">
-        <h2>My tools ({items.length})</h2>
-        <button className="btn primary" onClick={() => setAdding(!adding)}>{adding ? 'Close' : '+ Add tool'}</button>
+        <h2>My tools <span className="count-pill">{items.length}</span></h2>
+        <button className="btn primary" onClick={() => setAdding(!adding)}>
+          {adding ? 'Close' : <><IconPlus width={17} height={17} /> Add tool</>}
+        </button>
       </div>
 
       {adding && (
@@ -85,7 +88,7 @@ export default function Items() {
         ))}
       </div>
 
-      {shown.length === 0 && <div className="card empty">No tools yet. Try the 📷 Scan page to add some fast.</div>}
+      {shown.length === 0 && <div className="card empty">No tools yet. Head to <b>Scan</b> to add some in seconds.</div>}
 
       <div className="cards">
         {shown.map((item) => (
@@ -94,7 +97,7 @@ export default function Items() {
             <div className="item-body">
               <div className="result-name">{item.name}</div>
               <div className="muted small">{catName(item.category_id) || 'Uncategorized'}</div>
-              <div className="loc small">📍 {locName(item.location_id) || 'No location'}</div>
+              <div className="loc small"><IconPin width={13} height={13} /> {locName(item.location_id) || 'No location'}</div>
               <div className="controls">
                 <select value={item.status} onChange={(e) => changeStatus(item, e.target.value)}>
                   {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}

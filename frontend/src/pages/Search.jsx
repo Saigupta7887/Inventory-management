@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { api, photoUrl } from '../api'
+import { IconSearch, IconPin } from '../icons'
 
 const STATUS_LABEL = {
-  available: '🟢 Available', lent_out: '🟡 Lent out', lost: '🔴 Lost', needs_repair: '🛠️ Needs repair',
+  available: 'Available', lent_out: 'Lent out', lost: 'Lost', needs_repair: 'Needs repair',
+}
+const STATUS_DOT = {
+  available: 'ok', lent_out: 'warn', lost: 'bad', needs_repair: 'warn',
 }
 
 export default function Search() {
@@ -23,7 +27,7 @@ export default function Search() {
 
   return (
     <div>
-      <h2>🔍 Find a tool</h2>
+      <h2 className="page-h"><span className="page-ic"><IconSearch width={22} height={22} /></span> Find a tool</h2>
       <p className="muted">Ask in plain language, e.g. <em>"where is my hammer?"</em></p>
       <form onSubmit={run} className="search-bar">
         <input placeholder="where is my…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
@@ -32,7 +36,7 @@ export default function Search() {
 
       {results && results.length === 0 && (
         <div className="card empty">
-          <p>No matching tool found. 🎉 You probably don't own one — safe to buy it.</p>
+          <p>No matching tool found — you probably don't own one, so it's safe to buy.</p>
         </div>
       )}
 
@@ -43,8 +47,8 @@ export default function Search() {
             <div className="result-body">
               <div className="result-name">{r.item.name}</div>
               <div className="muted">{r.category_name || 'Uncategorized'}</div>
-              <div className="loc">📍 {r.location_name || 'No location set'}</div>
-              <div className="status">{STATUS_LABEL[r.item.status] || r.item.status}
+              <div className="loc"><IconPin width={14} height={14} /> {r.location_name || 'No location set'}</div>
+              <div className="status"><span className={`dot ${STATUS_DOT[r.item.status] || ''}`} />{STATUS_LABEL[r.item.status] || r.item.status}
                 {r.item.status === 'lent_out' && r.item.lent_to ? ` — ${r.item.lent_to}` : ''}</div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { IconPin, IconPlus } from '../icons'
 
 export default function Locations() {
   const [locations, setLocations] = useState([])
@@ -36,23 +37,26 @@ export default function Locations() {
 
   return (
     <div>
-      <h2>Locations</h2>
+      <h2 className="page-h"><span className="page-ic"><IconPin width={22} height={22} /></span> Locations</h2>
       <p className="muted">Named places where you keep tools — "Garage Pegboard", "Kitchen Drawer 2", "Toolbox top tray".</p>
 
       <form className="card inline-form" onSubmit={add}>
         <input placeholder="Location name" value={name} onChange={(e) => setName(e.target.value)} required />
         <input placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
-        <button className="btn primary">+ Add location</button>
+        <button className="btn primary"><IconPlus width={17} height={17} /> Add location</button>
       </form>
       {error && <div className="error">{error}</div>}
 
       <div className="cards">
         {locations.map((l) => (
           <div key={l.id} className="loc-card">
-            <div>
-              <div className="result-name">{l.name}</div>
-              {l.description && <div className="muted small">{l.description}</div>}
-              <div className="badge">{count(l.id)} tool(s)</div>
+            <div className="loc-main">
+              <span className="loc-tile"><IconPin width={20} height={20} /></span>
+              <div>
+                <div className="result-name">{l.name}</div>
+                {l.description && <div className="muted small">{l.description}</div>}
+                <div className="badge">{count(l.id)} tool{count(l.id) === 1 ? '' : 's'}</div>
+              </div>
             </div>
             <button className="link-btn danger" onClick={() => remove(l)}>Delete</button>
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, photoUrl } from '../api'
+import { IconCamera, IconCheck } from '../icons'
 
 export default function Scan() {
   const [locations, setLocations] = useState([])
@@ -57,7 +58,7 @@ export default function Scan() {
 
   return (
     <div>
-      <h2>📷 Scan a location</h2>
+      <h2 className="page-h"><span className="page-ic"><IconCamera width={22} height={22} /></span> Scan a location</h2>
       <p className="muted">Upload a photo of a desk, drawer, shelf or pegboard. AI detects the tools; you confirm which to add.</p>
 
       <div className="row">
@@ -76,14 +77,18 @@ export default function Scan() {
         <label className="dropzone">
           <input type="file" accept="image/*" onChange={onFile} hidden />
           <div className="dz-inner">
-            <div className="dz-icon">🖼️</div>
-            <div>Click to choose a photo</div>
-            <div className="muted small">JPG, PNG or WebP</div>
+            <span className="dz-icon"><IconCamera width={30} height={30} /></span>
+            <div className="dz-title">Click to choose a photo</div>
+            <div className="muted small">JPG, PNG or WebP · AI reads it instantly</div>
           </div>
         </label>
       )}
 
-      {step === 'detecting' && <div className="card center">🔎 Detecting tools…</div>}
+      {step === 'detecting' && (
+        <div className="card center detecting">
+          <span className="spinner" /> Analyzing photo & detecting tools…
+        </div>
+      )}
 
       {(step === 'review' || step === 'done') && photo && (
         <div className="scan-grid">
@@ -120,8 +125,8 @@ export default function Scan() {
                 <button className="btn ghost" onClick={reset}>Cancel</button>
               </>
             ) : (
-              <div className="card center">
-                <div className="dz-icon">✅</div>
+              <div className="card center done-card">
+                <span className="done-ic"><IconCheck width={30} height={30} /></span>
                 <h3>Added to your inventory!</h3>
                 <button className="btn primary" onClick={() => navigate('/items')}>View items</button>
                 <button className="btn ghost" onClick={reset}>Scan another</button>

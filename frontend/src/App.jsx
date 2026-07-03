@@ -1,5 +1,6 @@
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth'
+import { Logo, IconGrid, IconCamera, IconSearch, IconBox, IconPin, IconSpark, IconLogout } from './icons'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Locations from './pages/Locations'
@@ -11,20 +12,27 @@ import Admin from './pages/Admin'
 function Nav() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const link = (to, Icon, label, end) => (
+    <NavLink to={to} end={end}>
+      <Icon width={17} height={17} /> <span>{label}</span>
+    </NavLink>
+  )
   return (
     <nav className="nav">
-      <div className="brand">🔧 ToolFinder</div>
+      <div className="brand"><Logo size={28} /> <span>ToolFinder</span></div>
       <div className="nav-links">
-        <NavLink to="/" end>Dashboard</NavLink>
-        <NavLink to="/scan">📷 Scan</NavLink>
-        <NavLink to="/search">🔍 Find</NavLink>
-        <NavLink to="/items">Items</NavLink>
-        <NavLink to="/locations">Locations</NavLink>
-        {user?.role === 'admin' && <NavLink to="/admin">Admin</NavLink>}
+        {link('/', IconGrid, 'Dashboard', true)}
+        {link('/scan', IconCamera, 'Scan')}
+        {link('/search', IconSearch, 'Find')}
+        {link('/items', IconBox, 'Items')}
+        {link('/locations', IconPin, 'Locations')}
+        {user?.role === 'admin' && link('/admin', IconSpark, 'Admin')}
       </div>
       <div className="nav-user">
-        <span>{user?.display_name}</span>
-        <button className="link-btn" onClick={() => { logout(); navigate('/login') }}>Log out</button>
+        <span className="avatar">{(user?.display_name || '?').slice(0, 1).toUpperCase()}</span>
+        <button className="link-btn logout" onClick={() => { logout(); navigate('/login') }} title="Log out">
+          <IconLogout width={18} height={18} />
+        </button>
       </div>
     </nav>
   )

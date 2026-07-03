@@ -42,7 +42,7 @@ export default function Admin() {
             {analytics.likely_duplicates.map((d, i) => (
               <li key={i}><span>{d.name}</span><b>×{d.count}</b></li>
             ))}
-            {analytics.likely_duplicates.length === 0 && <li className="muted">None detected 🎉</li>}
+            {analytics.likely_duplicates.length === 0 && <li className="muted">None detected</li>}
           </ul>
         </div>
 

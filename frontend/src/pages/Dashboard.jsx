@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
+import { IconBox, IconPin, IconCheck, IconArrow, IconCamera, IconSearch, IconWrench } from '../icons'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -15,31 +16,48 @@ export default function Dashboard() {
 
   const byStatus = items.reduce((acc, i) => ({ ...acc, [i.status]: (acc[i.status] || 0) + 1 }), {})
 
+  const stats = [
+    { icon: IconBox, num: items.length, label: 'Tools' },
+    { icon: IconPin, num: locations.length, label: 'Locations' },
+    { icon: IconCheck, num: byStatus.available || 0, label: 'Available' },
+    { icon: IconArrow, num: byStatus.lent_out || 0, label: 'Lent out' },
+  ]
+  const actions = [
+    { to: '/scan', icon: IconCamera, title: 'Scan a location', desc: 'Photograph a desk or drawer and let AI list the tools.' },
+    { to: '/search', icon: IconSearch, title: 'Find a tool', desc: 'Ask “where is my hammer?” and get the location.' },
+    { to: '/items', icon: IconWrench, title: 'Manage inventory', desc: 'Add, move, lend, or retire tools by hand.' },
+  ]
+
   return (
     <div>
-      <h2>Welcome back, {user?.display_name} 👋</h2>
-      <p className="muted">Your personal tool inventory. Snap, find, and stop buying duplicates.</p>
+      <div className="hero-banner">
+        <div>
+          <div className="eyebrow">Your workshop, organized</div>
+          <h2>Welcome back, {user?.display_name?.split(' ')[0]}</h2>
+          <p className="muted">Snap, find, and stop buying duplicates.</p>
+        </div>
+        <Link to="/scan" className="btn primary lg"><IconCamera width={18} height={18} /> Scan a location</Link>
+      </div>
 
       <div className="stats">
-        <div className="stat"><div className="stat-num">{items.length}</div><div>Tools</div></div>
-        <div className="stat"><div className="stat-num">{locations.length}</div><div>Locations</div></div>
-        <div className="stat"><div className="stat-num">{byStatus.available || 0}</div><div>Available</div></div>
-        <div className="stat"><div className="stat-num">{byStatus.lent_out || 0}</div><div>Lent out</div></div>
+        {stats.map((s) => (
+          <div className="stat" key={s.label}>
+            <span className="stat-ic"><s.icon width={20} height={20} /></span>
+            <div className="stat-num">{s.num}</div>
+            <div className="stat-label">{s.label}</div>
+          </div>
+        ))}
       </div>
 
       <div className="quick">
-        <Link to="/scan" className="quick-card">
-          <div className="dz-icon">📷</div><h3>Scan a location</h3>
-          <p className="muted small">Photograph a desk or drawer and let AI list the tools.</p>
-        </Link>
-        <Link to="/search" className="quick-card">
-          <div className="dz-icon">🔍</div><h3>Find a tool</h3>
-          <p className="muted small">Ask "where is my hammer?" and get the location.</p>
-        </Link>
-        <Link to="/items" className="quick-card">
-          <div className="dz-icon">🧰</div><h3>Manage inventory</h3>
-          <p className="muted small">Add, move, lend, or retire tools by hand.</p>
-        </Link>
+        {actions.map((a) => (
+          <Link to={a.to} className="quick-card" key={a.to}>
+            <span className="tile"><a.icon width={22} height={22} /></span>
+            <h3>{a.title}</h3>
+            <p className="muted small">{a.desc}</p>
+            <span className="quick-go"><IconArrow width={18} height={18} /></span>
+          </Link>
+        ))}
       </div>
     </div>
   )
