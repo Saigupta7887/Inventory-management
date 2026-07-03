@@ -15,7 +15,7 @@ function Nav() {
     <nav className="nav">
       <div className="brand">🔧 ToolFinder</div>
       <div className="nav-links">
-        <NavLink to="/">Dashboard</NavLink>
+        <NavLink to="/" end>Dashboard</NavLink>
         <NavLink to="/scan">📷 Scan</NavLink>
         <NavLink to="/search">🔍 Find</NavLink>
         <NavLink to="/items">Items</NavLink>
