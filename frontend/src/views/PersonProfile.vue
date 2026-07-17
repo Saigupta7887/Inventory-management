@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import client from '@/api/client'
 import { usePeopleStore } from '@/stores/people'
 import Avatar from '@/components/Avatar.vue'
+import MessageSheet from '@/components/MessageSheet.vue'
+import { telLink } from '@/lib/contactActions'
 
 const props = defineProps({ id: { type: [String, Number], required: true } })
 const store = usePeopleStore()
@@ -16,6 +18,16 @@ const card = ref(null)
 const myReminders = ref([])
 const loading = ref(true)
 const tab = ref('overview')
+const showMessage = ref(false)
+
+function callNow() {
+  if (person.value?.phone) window.open(telLink(person.value.phone), '_blank')
+  else showMessage.value = true
+}
+
+async function refreshInteractions() {
+  interactions.value = await store.interactions(props.id)
+}
 
 const tabs = ['overview', 'notes', 'interactions', 'reminders']
 
@@ -82,10 +94,10 @@ async function remove() {
     </div>
 
     <div class="quick">
-      <RouterLink :to="{ name: 'log-interaction', params: { id: person.id } }" class="q"><span>💬</span>Message</RouterLink>
-      <RouterLink :to="{ name: 'log-interaction', params: { id: person.id } }" class="q"><span>📞</span>Call</RouterLink>
+      <button class="q" @click="showMessage = true"><span>💬</span>Message</button>
+      <button class="q" @click="callNow"><span>📞</span>Call</button>
       <RouterLink :to="{ name: 'add-note', params: { id: person.id } }" class="q"><span>📝</span>Add Note</RouterLink>
-      <RouterLink :to="{ name: 'log-interaction', params: { id: person.id } }" class="q"><span>⋯</span>More</RouterLink>
+      <RouterLink :to="{ name: 'log-interaction', params: { id: person.id } }" class="q"><span>⋯</span>Log</RouterLink>
     </div>
 
     <div class="tabs">
@@ -149,6 +161,14 @@ async function remove() {
       </div>
       <p v-if="!myReminders.length" class="muted empty">No active reminders — you're in good shape.</p>
     </template>
+
+    <MessageSheet
+      v-if="showMessage"
+      :person="person"
+      :draft="card.draft_message"
+      @close="showMessage = false"
+      @logged="refreshInteractions"
+    />
   </div>
 </template>
 

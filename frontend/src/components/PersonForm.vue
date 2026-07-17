@@ -10,6 +10,7 @@ const form = ref({
   relationship_type: 'friend',
   priority: 'medium',
   reminder_interval_days: 30,
+  phone: '',
   email: '',
   birthday: '',
   tags: '',
@@ -57,6 +58,16 @@ async function save() {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
+        </div>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label class="label">Phone</label>
+          <input v-model="form.phone" type="tel" class="input" placeholder="+1 555 123 4567" />
+        </div>
+        <div class="field">
+          <label class="label">Email</label>
+          <input v-model="form.email" type="email" class="input" placeholder="name@email.com" />
         </div>
       </div>
       <div class="two">

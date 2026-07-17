@@ -62,6 +62,17 @@ Both return an identity token you POST to the same backend endpoints
 token-acquisition step changes. Add a small platform check in `social.js`
 (`Capacitor.isNativePlatform()`) to branch to the native plugin.
 
+## Contacts & messaging on native
+
+- **Contacts:** the web build uses the Contact Picker API (Chrome/Android only).
+  For full contact import on iOS + Android, install
+  [`@capacitor-community/contacts`](https://github.com/capacitor-community/contacts)
+  and branch in `src/lib/contacts.js` on `Capacitor.isNativePlatform()`.
+- **Messaging:** the Message/Call buttons open WhatsApp / SMS / Mail / the
+  dialer via `wa.me`, `sms:`, `mailto:` and `tel:` links (see
+  `src/lib/contactActions.js`). These work as-is inside the native webview — no
+  app can send silently on iOS, so this hand-off is the supported approach.
+
 ## App identity
 
 - Bundle / application ID: `app.bondly.mobile` (see `capacitor.config.json`)

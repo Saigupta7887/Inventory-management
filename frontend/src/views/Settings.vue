@@ -2,6 +2,8 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePeopleStore } from '@/stores/people'
+import { pickContacts, contactsSupported } from '@/lib/contacts'
 import Avatar from '@/components/Avatar.vue'
 
 const auth = useAuthStore()
@@ -44,6 +46,44 @@ async function save() {
   saved.value = true
   editing.value = false
   setTimeout(() => (saved.value = false), 2000)
+}
+
+const people = usePeopleStore()
+const importMsg = ref('')
+const importing = ref(false)
+
+async function importContacts() {
+  importMsg.value = ''
+  if (!contactsSupported()) {
+    importMsg.value =
+      'Importing contacts needs the Bondly app or Chrome on Android. On this device, add people with the + button.'
+    return
+  }
+  importing.value = true
+  try {
+    const { contacts } = await pickContacts()
+    let added = 0
+    for (const c of contacts) {
+      await people.create({
+        name: c.name,
+        phone: c.phone,
+        email: c.email,
+        relationship_type: 'friend',
+        priority: 'medium',
+      })
+      added++
+    }
+    importMsg.value = added ? `Imported ${added} contact${added === 1 ? '' : 's'}. 🎉` : 'No contacts selected.'
+  } catch (e) {
+    importMsg.value = 'Import was cancelled.'
+  } finally {
+    importing.value = false
+  }
+}
+
+function accountAction(label) {
+  if (label === 'Import Contacts') importContacts()
+  else editing.value = false
 }
 
 function logout() {
@@ -94,10 +134,14 @@ function logout() {
 
     <h3 class="group-title">Account</h3>
     <div class="group">
-      <button v-for="a in account" :key="a.label" class="setrow">
-        <span class="ic">{{ a.icon }}</span><span class="grow">{{ a.label }}</span><span class="chev">›</span>
+      <button v-for="a in account" :key="a.label" class="setrow" @click="accountAction(a.label)">
+        <span class="ic">{{ a.icon }}</span>
+        <span class="grow">{{ a.label }}</span>
+        <span v-if="a.label === 'Import Contacts' && importing" class="muted small">importing…</span>
+        <span class="chev">›</span>
       </button>
     </div>
+    <p v-if="importMsg" class="import-msg">{{ importMsg }}</p>
 
     <button class="logout" @click="logout">Log Out</button>
   </div>
@@ -126,6 +170,15 @@ function logout() {
   display: flex; align-items: center; justify-content: center; font-size: 17px;
 }
 .chev { color: var(--muted); font-size: 20px; }
+.import-msg {
+  margin: 12px 4px 0;
+  font-size: 13px;
+  color: var(--primary);
+  background: var(--primary-050);
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.small { font-size: 12px; }
 .logout {
   width: 100%; margin: 22px 0 10px; padding: 15px;
   border-radius: 16px; background: var(--high-bg); color: var(--high-fg);

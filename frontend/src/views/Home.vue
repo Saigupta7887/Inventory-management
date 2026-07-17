@@ -5,6 +5,8 @@ import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { usePeopleStore } from '@/stores/people'
 import Avatar from '@/components/Avatar.vue'
+import MessageSheet from '@/components/MessageSheet.vue'
+import { telLink } from '@/lib/contactActions'
 
 const auth = useAuthStore()
 const people = usePeopleStore()
@@ -44,6 +46,13 @@ const rest = computed(() =>
   (data.value?.needs_attention || []).slice(reconnect.value ? 1 : 0),
 )
 
+const showMessage = ref(false)
+function callReconnect() {
+  const p = reconnect.value?.person
+  if (p?.phone) window.open(telLink(p.phone), '_blank')
+  else showMessage.value = true
+}
+
 function fmtDays(d) {
   if (d === 0) return 'today'
   if (d === 1) return 'in 1 day'
@@ -82,17 +91,20 @@ function fmtDays(d) {
         </div>
         <p class="suggest">✨ {{ reconnect.card.suggested_question }}</p>
         <div class="actions">
-          <RouterLink :to="{ name: 'log-interaction', params: { id: reconnect.person.id } }" class="act">
-            <span>💬</span>Message
-          </RouterLink>
-          <RouterLink :to="{ name: 'log-interaction', params: { id: reconnect.person.id } }" class="act">
-            <span>📞</span>Call
-          </RouterLink>
+          <button class="act" @click="showMessage = true"><span>💬</span>Message</button>
+          <button class="act" @click="callReconnect"><span>📞</span>Call</button>
           <RouterLink :to="{ name: 'add-note', params: { id: reconnect.person.id } }" class="act">
             <span>📝</span>Add Note
           </RouterLink>
         </div>
       </div>
+
+      <MessageSheet
+        v-if="showMessage && reconnect"
+        :person="reconnect.person"
+        :draft="reconnect.card.draft_message"
+        @close="showMessage = false"
+      />
       <p v-else class="muted empty">You're all caught up. 🎉</p>
 
       <!-- Nearby prompt -->

@@ -38,9 +38,11 @@ function seed() {
   ]
   for (const [name, rel, prio, intv, bday, tags, loc, last, lat, lng] of P) {
     const id = nextId()
+    const handle = name.toLowerCase().split(' ')[0]
     db.people.push({
-      id, owner_id: 1, name, nickname: null, relationship_type: rel, phone: null,
-      email: null, birthday: bday, priority: prio, preferred_contact_method: null,
+      id, owner_id: 1, name, nickname: null, relationship_type: rel,
+      phone: '+15550' + (100 + id), email: `${handle}@example.com`,
+      birthday: bday, priority: prio, preferred_contact_method: null,
       reminder_interval_days: intv, tags, location_label: loc, latitude: lat, longitude: lng,
       last_interaction_at: daysAgoISO(last), created_at: daysAgoISO(120),
     })
