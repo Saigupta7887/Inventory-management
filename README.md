@@ -15,11 +15,15 @@ by a time-ordered UUIDv7, IDs as the contract between modules).
 
 ## Features
 
-- **📷 Scan-to-inventory (core):** upload a photo of a location → Claude vision
-  detects the tools → you confirm which to add → they become inventory items.
-  Works out of the box with a **built-in mock detector** if no API key is set.
-- **🔍 Natural-language search:** "where is my hammer?" → returns the tool,
-  its location and a photo. No match ⇒ you don't own it ⇒ safe to buy.
+- **Scan-to-inventory (core):** photograph a location → Claude vision detects
+  the tools → you confirm which to add → they become inventory items. On a
+  phone the scanner opens the **camera** directly. Works out of the box with a
+  **built-in mock detector** if no API key is set.
+- **"Before you buy" check (core):** search a tool and get a clear verdict —
+  *"You already own 1 in Garage Pegboard"* vs *"safe to buy"* — so you never
+  buy a duplicate. (`GET /items/check`)
+- **Fast image thumbnails:** small JPEG thumbnails are generated on upload and
+  served to grids/cards for quick loading. (`GET /photos/{id}/thumb`)
 - **🧰 Inventory management:** add/edit/move tools, statuses (available,
   lent-out, lost, needs-repair), lend tracking, categories & nested locations.
 - **👤 Two personas / roles:** *customer* (home owner) and *admin* (dashboard
@@ -111,8 +115,8 @@ docs/SPEC.md           # product & architecture specification
 | Auth | `POST /auth/signup` · `POST /auth/login` · `GET /auth/me` |
 | Locations | `GET/POST /locations` · `DELETE /locations/{id}` |
 | Categories | `GET/POST /categories` |
-| Items | `GET/POST /items` · `GET/PATCH/DELETE /items/{id}` |
-| Photos / AI | `POST /photos` · `POST /photos/{id}/detect` · `POST /photos/{id}/accept` · `GET /photos/{id}/file` |
+| Items | `GET/POST /items` · `GET/PATCH/DELETE /items/{id}` · `GET /items/check?q=...` ("before you buy") |
+| Photos / AI | `POST /photos` · `POST /photos/{id}/detect` · `POST /photos/{id}/accept` · `GET /photos/{id}/file` · `GET /photos/{id}/thumb` |
 | Search | `GET /search?q=...` |
 | Admin | `GET /admin/users` · `GET /admin/analytics` |
 

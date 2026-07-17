@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { api, photoUrl } from '../api'
-import { IconSearch, IconPin } from '../icons'
+import { api, thumbUrl } from '../api'
+import { IconSearch, IconPin, IconCheck, IconPlus } from '../icons'
 
 const STATUS_LABEL = {
   available: 'Available', lent_out: 'Lent out', lost: 'Lost', needs_repair: 'Needs repair',
@@ -11,15 +11,16 @@ const STATUS_DOT = {
 
 export default function Search() {
   const [q, setQ] = useState('')
-  const [results, setResults] = useState(null)
+  const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
 
   async function run(e) {
     e.preventDefault()
+    if (!q.trim()) return
     setBusy(true)
     try {
-      const r = await api.get(`/search?q=${encodeURIComponent(q)}`)
-      setResults(r)
+      const r = await api.get(`/items/check?q=${encodeURIComponent(q)}`)
+      setResult(r)
     } finally {
       setBusy(false)
     }
@@ -28,28 +29,35 @@ export default function Search() {
   return (
     <div>
       <h2 className="page-h"><span className="page-ic"><IconSearch width={22} height={22} /></span> Find a tool</h2>
-      <p className="muted">Ask in plain language, e.g. <em>"where is my hammer?"</em></p>
+      <p className="muted">Before you buy, check if you already own it. Ask in plain language, e.g. <em>"do I own a hammer?"</em></p>
+
       <form onSubmit={run} className="search-bar">
-        <input placeholder="where is my…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
-        <button className="btn primary" disabled={busy}>{busy ? '…' : 'Search'}</button>
+        <input placeholder="Search a tool…  e.g. hammer, cordless drill" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+        <button className="btn primary" disabled={busy}>{busy ? 'Checking…' : 'Check'}</button>
       </form>
 
-      {results && results.length === 0 && (
-        <div className="card empty">
-          <p>No matching tool found — you probably don't own one, so it's safe to buy.</p>
+      {result && (
+        <div className={`verdict ${result.owned ? 'owned' : 'buy'}`}>
+          <span className="verdict-ic">
+            {result.owned ? <IconCheck width={26} height={26} /> : <IconPlus width={26} height={26} />}
+          </span>
+          <div>
+            <div className="verdict-title">
+              {result.owned ? `You already own this` : `Safe to buy`}
+            </div>
+            <div className="verdict-msg">{result.message}</div>
+          </div>
         </div>
       )}
 
       <div className="cards">
-        {results && results.map((r) => (
-          <div key={r.item.id} className="result-card">
-            {r.photo_id && <img className="thumb" src={photoUrl(r.photo_id)} alt="" />}
+        {result && result.matches.map((m) => (
+          <div key={m.id} className="result-card">
+            {m.photo_id && <img className="thumb" src={thumbUrl(m.photo_id)} alt="" loading="lazy" />}
             <div className="result-body">
-              <div className="result-name">{r.item.name}</div>
-              <div className="muted">{r.category_name || 'Uncategorized'}</div>
-              <div className="loc"><IconPin width={14} height={14} /> {r.location_name || 'No location set'}</div>
-              <div className="status"><span className={`dot ${STATUS_DOT[r.item.status] || ''}`} />{STATUS_LABEL[r.item.status] || r.item.status}
-                {r.item.status === 'lent_out' && r.item.lent_to ? ` — ${r.item.lent_to}` : ''}</div>
+              <div className="result-name">{m.name}{m.quantity > 1 ? ` ×${m.quantity}` : ''}</div>
+              <div className="loc"><IconPin width={14} height={14} /> {m.location_name || 'No location set'}</div>
+              <div className="status"><span className={`dot ${STATUS_DOT[m.status] || ''}`} />{STATUS_LABEL[m.status] || m.status}</div>
             </div>
           </div>
         ))}

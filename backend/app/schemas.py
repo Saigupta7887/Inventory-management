@@ -131,6 +131,25 @@ class SearchResult(BaseModel):
     photo_id: str | None
 
 
+# ---- Ownership check ("before you buy") ----
+class OwnershipMatch(BaseModel):
+    id: str
+    name: str
+    location_name: str | None
+    status: str
+    quantity: int
+    photo_id: str | None
+
+
+class OwnershipCheck(BaseModel):
+    query: str
+    owned: bool
+    total_quantity: int
+    matches: list[OwnershipMatch]
+    verdict: str  # "owned" | "not_owned"
+    message: str
+
+
 # ---- Admin ----
 class AdminAnalytics(BaseModel):
     total_users: int

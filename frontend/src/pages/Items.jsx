@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, photoUrl } from '../api'
+import { api, thumbUrl } from '../api'
 import { IconPlus, IconPin } from '../icons'
 
 const STATUSES = ['available', 'lent_out', 'lost', 'needs_repair']
@@ -93,7 +93,7 @@ export default function Items() {
       <div className="cards">
         {shown.map((item) => (
           <div key={item.id} className="item-card">
-            {item.primary_photo_id && <img className="thumb" src={photoUrl(item.primary_photo_id)} alt="" />}
+            {item.primary_photo_id && <img className="thumb" src={thumbUrl(item.primary_photo_id)} alt="" loading="lazy" />}
             <div className="item-body">
               <div className="result-name">{item.name}</div>
               <div className="muted small">{catName(item.category_id) || 'Uncategorized'}</div>

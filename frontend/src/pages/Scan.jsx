@@ -74,14 +74,23 @@ export default function Scan() {
       {error && <div className="error">{error}</div>}
 
       {step === 'upload' && (
-        <label className="dropzone">
-          <input type="file" accept="image/*" onChange={onFile} hidden />
-          <div className="dz-inner">
-            <span className="dz-icon"><IconCamera width={30} height={30} /></span>
-            <div className="dz-title">Click to choose a photo</div>
-            <div className="muted small">JPG, PNG or WebP · AI reads it instantly</div>
+        <>
+          <label className="dropzone">
+            {/* capture="environment" makes phones open the rear camera directly */}
+            <input type="file" accept="image/*" capture="environment" onChange={onFile} hidden />
+            <div className="dz-inner">
+              <span className="dz-icon"><IconCamera width={30} height={30} /></span>
+              <div className="dz-title">Take a photo of your tools</div>
+              <div className="muted small">On a phone this opens the camera · AI reads it instantly</div>
+            </div>
+          </label>
+          <div className="dz-alt">
+            <label className="link-btn">
+              <input type="file" accept="image/*" onChange={onFile} hidden />
+              or choose an existing photo from your library
+            </label>
           </div>
-        </label>
+        </>
       )}
 
       {step === 'detecting' && (

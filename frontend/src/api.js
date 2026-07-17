@@ -43,3 +43,8 @@ export const api = {
 export function photoUrl(photoId) {
   return `${BASE}/photos/${photoId}/file?t=${encodeURIComponent(getToken() || '')}`
 }
+
+// Small thumbnail variant — much lighter for grids and cards.
+export function thumbUrl(photoId) {
+  return `${BASE}/photos/${photoId}/thumb?t=${encodeURIComponent(getToken() || '')}`
+}

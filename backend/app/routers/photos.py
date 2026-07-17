@@ -28,6 +28,22 @@ def _owned_photo(db: Session, photo_id: str, user: User) -> Photo:
     return photo
 
 
+def _thumb_key(storage_key: str) -> str:
+    root, _, ext = storage_key.rpartition(".")
+    return f"{root}_thumb.jpg" if root else f"{storage_key}_thumb.jpg"
+
+
+def _resolve_photo(db: Session, photo_id: str, token: str | None) -> Photo:
+    """Resolve a photo for an <img> request (token via header or ?t= param)."""
+    user_id = decode_token(token) if token else None
+    if user_id is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
+    photo = db.get(Photo, photo_id)
+    if photo is None or photo.deleted_at is not None or photo.owner_id != user_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
+    return photo
+
+
 @router.post("", response_model=PhotoOut, status_code=status.HTTP_201_CREATED)
 def upload_photo(
     file: UploadFile = File(...),
@@ -53,17 +69,20 @@ def upload_photo(
     ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}[content_type]
     photo.storage_key = f"{photo.id}.{ext}"
 
-    # Best-effort image dimensions.
+    with open(os.path.join(settings.upload_dir, photo.storage_key), "wb") as f:
+        f.write(data)
+
+    # Best-effort image dimensions + a small thumbnail for fast grids.
     try:
         from PIL import Image
 
         with Image.open(io.BytesIO(data)) as img:
             photo.width, photo.height = img.size
+            thumb = img.convert("RGB")
+            thumb.thumbnail((480, 480))
+            thumb.save(os.path.join(settings.upload_dir, _thumb_key(photo.storage_key)), "JPEG", quality=82)
     except Exception:
         pass
-
-    with open(os.path.join(settings.upload_dir, photo.storage_key), "wb") as f:
-        f.write(data)
 
     db.add(photo)
     db.flush()
@@ -83,12 +102,26 @@ def get_photo_file(
     # Accept the token from the Authorization header OR a `t` query param, so
     # the image can be shown directly in an <img> tag (which can't set headers).
     token = credentials.credentials if credentials else t
-    user_id = decode_token(token) if token else None
-    if user_id is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
-    photo = db.get(Photo, photo_id)
-    if photo is None or photo.deleted_at is not None or photo.owner_id != user_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
+    photo = _resolve_photo(db, photo_id, token)
+    path = os.path.join(settings.upload_dir, photo.storage_key)
+    if not os.path.exists(path):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "File missing")
+    return FileResponse(path, media_type=photo.content_type)
+
+
+@router.get("/{photo_id}/thumb")
+def get_photo_thumb(
+    photo_id: str,
+    t: str | None = None,
+    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+):
+    """Serve the small thumbnail (falls back to the original if none exists)."""
+    token = credentials.credentials if credentials else t
+    photo = _resolve_photo(db, photo_id, token)
+    thumb_path = os.path.join(settings.upload_dir, _thumb_key(photo.storage_key))
+    if os.path.exists(thumb_path):
+        return FileResponse(thumb_path, media_type="image/jpeg")
     path = os.path.join(settings.upload_dir, photo.storage_key)
     if not os.path.exists(path):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "File missing")
