@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePeopleStore } from '@/stores/people'
 import { pickContacts, contactsSupported } from '@/lib/contacts'
+import { enableNotifications, disableNotifications, notifyEnabled, notifySupported } from '@/lib/notify'
 import Avatar from '@/components/Avatar.vue'
 
 const auth = useAuthStore()
@@ -86,6 +87,30 @@ function accountAction(label) {
   else editing.value = false
 }
 
+const notifOn = ref(notifyEnabled())
+const notifMsg = ref('')
+async function prefAction(label) {
+  if (label === 'Notification Settings') {
+    if (!notifySupported()) {
+      notifMsg.value = 'Notifications need the Bondly app or a supported browser.'
+      return
+    }
+    if (notifOn.value) {
+      disableNotifications()
+      notifOn.value = false
+      notifMsg.value = 'Notifications turned off.'
+    } else {
+      const p = await enableNotifications()
+      notifOn.value = notifyEnabled()
+      notifMsg.value = p === 'granted'
+        ? 'Notifications on — we\'ll nudge you when someone needs attention.'
+        : 'Permission was blocked. Enable it in your browser settings.'
+    }
+  } else {
+    editing.value = true
+  }
+}
+
 function logout() {
   auth.logout()
   router.push({ name: 'welcome' })
@@ -127,10 +152,16 @@ function logout() {
 
     <h3 class="group-title">Preferences</h3>
     <div class="group">
-      <button v-for="p in preferences" :key="p.label" class="setrow" @click="editing = true">
-        <span class="ic">{{ p.icon }}</span><span class="grow">{{ p.label }}</span><span class="chev">›</span>
+      <button v-for="p in preferences" :key="p.label" class="setrow" @click="prefAction(p.label)">
+        <span class="ic">{{ p.icon }}</span>
+        <span class="grow">{{ p.label }}</span>
+        <span v-if="p.label === 'Notification Settings'" class="pill" :class="notifOn ? 'low' : ''">
+          {{ notifOn ? 'On' : 'Off' }}
+        </span>
+        <span class="chev">›</span>
       </button>
     </div>
+    <p v-if="notifMsg" class="import-msg">{{ notifMsg }}</p>
 
     <h3 class="group-title">Account</h3>
     <div class="group">

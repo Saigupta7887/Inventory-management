@@ -7,6 +7,7 @@ import { usePeopleStore } from '@/stores/people'
 import Avatar from '@/components/Avatar.vue'
 import MessageSheet from '@/components/MessageSheet.vue'
 import { telLink } from '@/lib/contactActions'
+import { maybeNotifyReminders } from '@/lib/notify'
 
 const auth = useAuthStore()
 const people = usePeopleStore()
@@ -37,9 +38,34 @@ onMounted(async () => {
       ])
       reconnect.value = { person, card, message: top.message }
     }
+    // Surface a browser notification for anyone needing attention (throttled).
+    maybeNotifyReminders(dash.needs_attention)
   } finally {
     loading.value = false
   }
+})
+
+const bellOpen = ref(false)
+const notifications = computed(() => {
+  const d = data.value
+  if (!d) return []
+  const items = d.needs_attention.map((n) => ({
+    id: 'na' + n.person_id,
+    person_id: n.person_id,
+    icon: '🔔',
+    text: n.message,
+    name: n.name,
+  }))
+  d.upcoming_events.forEach((e) =>
+    items.push({
+      id: 'ev' + e.person_id,
+      person_id: e.person_id,
+      icon: '🎂',
+      text: `Birthday ${fmtDays(e.days_until)}`,
+      name: e.name,
+    }),
+  )
+  return items
 })
 
 const rest = computed(() =>
@@ -67,10 +93,31 @@ function fmtDays(d) {
         <h1>{{ greeting }},<br />{{ firstName }} 👋</h1>
         <p class="muted sub">Here's what's important today.</p>
       </div>
-      <RouterLink :to="{ name: 'reminders' }" class="bell">
-        🔔<span v-if="data?.summary?.needs_attention_count" class="badge"></span>
-      </RouterLink>
+      <button class="bell" @click="bellOpen = !bellOpen">
+        🔔<span v-if="notifications.length" class="badge"></span>
+      </button>
     </header>
+
+    <div v-if="bellOpen" class="notif-panel card">
+      <div class="np-head">
+        <strong>Notifications</strong>
+        <button class="np-close" @click="bellOpen = false">✕</button>
+      </div>
+      <p v-if="!notifications.length" class="muted small">You're all caught up. 🎉</p>
+      <RouterLink
+        v-for="n in notifications"
+        :key="n.id"
+        :to="{ name: 'person', params: { id: n.person_id } }"
+        class="np-row"
+        @click="bellOpen = false"
+      >
+        <span class="np-ic">{{ n.icon }}</span>
+        <div>
+          <strong>{{ n.name }}</strong>
+          <div class="muted small">{{ n.text }}</div>
+        </div>
+      </RouterLink>
+    </div>
 
     <p v-if="loading" class="spinner">Loading…</p>
 
@@ -166,6 +213,11 @@ function fmtDays(d) {
   width: 9px; height: 9px; border-radius: 50%;
   background: var(--high-fg); border: 2px solid #fff;
 }
+.notif-panel { margin-top: 12px; padding: 14px; }
+.np-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.np-close { color: var(--muted); font-size: 15px; }
+.np-row { display: flex; gap: 12px; align-items: center; padding: 10px 2px; border-top: 1px solid var(--border); }
+.np-ic { font-size: 20px; }
 .small { font-size: 13px; }
 .empty { padding: 8px 4px 4px; }
 

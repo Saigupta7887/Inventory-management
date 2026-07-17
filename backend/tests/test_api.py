@@ -115,6 +115,56 @@ def test_google_login_disabled_returns_503(client):
     assert r.status_code == 503
 
 
+def test_ai_falls_back_to_heuristics_without_key(client):
+    # No ANTHROPIC_API_KEY in tests -> categorization uses heuristics.
+    from app.services.ai import categorize_note
+
+    assert categorize_note("She loves matcha") == "preference"
+    assert categorize_note("Started a new job") == "work_update"
+
+
+def test_ai_uses_claude_when_enabled(monkeypatch):
+    # Force the Claude path and stub the one-shot call.
+    import app.services.ai as ai
+
+    monkeypatch.setattr(ai, "_ai_enabled", lambda: True)
+    monkeypatch.setattr(ai, "_claude_text", lambda system, user, max_tokens: "work_update")
+    assert ai.categorize_note("anything") == "work_update"
+
+    # A non-category reply from the model falls back to the heuristic.
+    monkeypatch.setattr(ai, "_claude_text", lambda system, user, max_tokens: "not-a-label")
+    assert ai.categorize_note("She loves sushi") == "preference"
+
+
+def test_reminder_snooze_and_complete(client):
+    h = _auth(client)
+    # Overdue person -> shows as an upcoming reconnect reminder.
+    r = client.post(
+        "/api/people",
+        json={"name": "Old Friend", "reminder_interval_days": 1},
+        headers=h,
+    )
+    pid = r.json()["id"]
+    # Log an interaction 10 days ago so they're overdue.
+    client.post(
+        f"/api/people/{pid}/interactions",
+        json={"channel": "call", "occurred_at": "2000-01-01T00:00:00+00:00"},
+        headers=h,
+    )
+    assert any(x["person_id"] == pid for x in client.get("/api/reminders", headers=h).json())
+
+    # Snooze -> disappears from upcoming, appears in snoozed.
+    client.post("/api/reminders/snooze", json={"person_id": pid, "kind": "reconnect", "days": 5}, headers=h)
+    assert not any(x["person_id"] == pid for x in client.get("/api/reminders", headers=h).json())
+    assert any(x["person_id"] == pid for x in client.get("/api/reminders/snoozed", headers=h).json())
+
+    # Complete -> appears in completed, not in upcoming/snoozed.
+    client.post("/api/reminders/complete", json={"person_id": pid, "kind": "reconnect"}, headers=h)
+    assert any(x["person_id"] == pid for x in client.get("/api/reminders/completed", headers=h).json())
+    assert not any(x["person_id"] == pid for x in client.get("/api/reminders/snoozed", headers=h).json())
+    assert not any(x["person_id"] == pid for x in client.get("/api/reminders", headers=h).json())
+
+
 def test_location_feature(client):
     h = _auth(client)
 

@@ -24,6 +24,7 @@ const db = {
   interactions: [],
   errands: [],
   places: [],
+  reminderStates: {}, // `${personId}:${kind}` -> {status, snoozed_until, completed_at}
 }
 const nextId = () => ++db.seq
 
@@ -173,7 +174,7 @@ function handle(method, path, body, params) {
   }
 
   // Reminders
-  if (path === '/api/reminders') {
+  const candidates = () => {
     const out = []
     for (const p of db.people) {
       if (isOverdue(p)) out.push({ person_id: p.id, person_name: p.name, kind: 'reconnect', message: reconnectMsg(p), priority: p.priority, days_since: daysSince(p) })
@@ -182,7 +183,40 @@ function handle(method, path, body, params) {
     }
     const rank = { very_high: 0, high: 1, medium: 2, low: 3 }
     out.sort((a, b) => (rank[a.priority] ?? 2) - (rank[b.priority] ?? 2))
-    return ok(out)
+    return out
+  }
+  const rstate = (pid, kind) => db.reminderStates[`${pid}:${kind}`]
+  if (path === '/api/reminders' && method === 'get') {
+    const nowMs = Date.now()
+    return ok(candidates().filter((r) => {
+      const s = rstate(r.person_id, r.kind)
+      if (!s) return true
+      if (s.status === 'completed') return false
+      if (s.status === 'snoozed' && s.snoozed_until && new Date(s.snoozed_until) > nowMs) return false
+      return true
+    }))
+  }
+  if (path === '/api/reminders/snoozed') {
+    const nowMs = Date.now()
+    return ok(candidates().filter((r) => {
+      const s = rstate(r.person_id, r.kind)
+      return s && s.status === 'snoozed' && s.snoozed_until && new Date(s.snoozed_until) > nowMs
+    }).map((r) => ({ ...r, snoozed_until: rstate(r.person_id, r.kind).snoozed_until })))
+  }
+  if (path === '/api/reminders/completed') {
+    return ok(Object.entries(db.reminderStates)
+      .filter(([, s]) => s.status === 'completed')
+      .map(([key, s]) => { const [pid, kind] = key.split(':'); const p = person(Number(pid)); return p ? { person_id: p.id, person_name: p.name, kind, message: (kind === 'birthday' ? 'Birthday wishes sent' : 'Reconnected') + ' · ' + p.name, priority: p.priority, completed_at: s.completed_at } : null })
+      .filter(Boolean))
+  }
+  if (path === '/api/reminders/snooze' && method === 'post') {
+    const until = iso(new Date(Date.now() + Math.max(1, body.days || 3) * 86400000))
+    db.reminderStates[`${body.person_id}:${body.kind}`] = { status: 'snoozed', snoozed_until: until, completed_at: null }
+    return ok({ status: 'snoozed', snoozed_until: until })
+  }
+  if (path === '/api/reminders/complete' && method === 'post') {
+    db.reminderStates[`${body.person_id}:${body.kind}`] = { status: 'completed', completed_at: iso(now()), snoozed_until: null }
+    return ok({ status: 'completed' })
   }
 
   // Insights

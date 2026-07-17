@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
+    # AI (optional): when set, the note/message helpers call the Claude API;
+    # otherwise they use the built-in heuristics.
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-opus-4-8"
+
     # Social login (leave blank to disable that provider).
     # Google OAuth client ID (the web client ID from Google Cloud Console).
     google_client_id: str = ""

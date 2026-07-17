@@ -132,13 +132,23 @@ The product blueprint's phases are implemented as follows:
 | 9 | Natural-language-ish search | `routes/search.py`, `People.vue` search bar |
 | 10 | Context-aware / nearby reminders | `models/place.py`, `models/errand.py`, `services/location.py`, `routes/nearby.py`, `Nearby.vue`, `ErrandNew.vue` |
 
-### A note on the "AI" layer
+### A note on the AI layer
 
-`backend/app/services/ai.py` ships **dependency-free heuristics** so the product
-is fully functional out of the box with no API key. Note categorization,
-suggested questions, and message drafts all work today. The function signatures
-are the contract — swap the bodies for real **Claude API** calls when you want
-smarter output, without touching the rest of the app.
+`backend/app/services/ai.py` uses the **Claude API** (`claude-opus-4-8`) for note
+categorization, suggested questions, and message drafts when `ANTHROPIC_API_KEY`
+is set — and falls back to **dependency-free heuristics** when it isn't, so the
+product is fully functional out of the box with no key. Any API error also
+degrades to the heuristic, so a bad key never breaks the app. Configure via
+`ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_MODEL`) in `backend/.env`.
+
+### Reminders & notifications
+
+Reminders are computed live (reconnect + birthday) with **Upcoming / Snoozed /
+Completed** tabs; snooze and complete actions persist server-side
+(`reminder_states`). The Home bell opens an in-app notification panel, and
+Settings → Notification Settings requests browser-notification permission to
+nudge you when someone needs attention (true background push would come from the
+native app / a push server).
 
 ---
 
