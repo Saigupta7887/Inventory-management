@@ -20,12 +20,13 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.2.0",
     "@capacitor/cli": "^6.2.0",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",
-    "@capacitor/android": "^6.2.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "vite": "^6.0.7",
-    "vite-plugin-pwa": "^0.21.1"
+    "vite-plugin-pwa": "^0.21.1",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }

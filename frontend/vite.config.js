@@ -3,10 +3,18 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import { viteSingleFile } from 'vite-plugin-singlefile'
+
+const DEMO = process.env.VITE_DEMO === '1'
 
 export default defineConfig({
   plugins: [
     vue(),
+    // The hosted demo is a single self-contained HTML file with no service
+    // worker; the real build ships the PWA.
+    ...(DEMO
+      ? [viteSingleFile()]
+      : [
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'icons/apple-touch-icon.png'],
@@ -31,6 +39,7 @@ export default defineConfig({
         ],
       },
     }),
+        ]),
   ],
   resolve: {
     alias: {

@@ -6,6 +6,7 @@ import StatusBar from '@/components/StatusBar.vue'
 import BottomNav from '@/components/BottomNav.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import ActionSheet from '@/components/ActionSheet.vue'
+import VoiceAssistant from '@/components/VoiceAssistant.vue'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -30,6 +31,7 @@ const chrome = computed(
       </main>
       <BottomNav v-if="chrome" class="mobile-only" @fab="sheetOpen = true" />
       <ActionSheet v-if="chrome" :open="sheetOpen" @close="sheetOpen = false" />
+      <VoiceAssistant v-if="chrome" />
     </div>
   </div>
 </template>

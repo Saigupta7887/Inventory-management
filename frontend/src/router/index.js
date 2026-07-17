@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [
@@ -18,7 +18,11 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  // Hash history for the self-contained hosted demo; clean URLs otherwise.
+  history:
+    import.meta.env.VITE_DEMO === '1'
+      ? createWebHashHistory()
+      : createWebHistory(),
   routes,
 })
 

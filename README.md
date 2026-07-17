@@ -40,6 +40,22 @@ The same Vue codebase runs three ways:
     `frontend/.env` (see `frontend/.env.example`).
   - `GET /api/auth/providers` reports which providers are enabled.
 
+### 🎙️ "Hey Bondly" voice assistant
+
+Tap the mic (or type) and speak naturally — Bondly parses the intent and *does*
+it, then replies out loud:
+
+- "note that Sarah loves matcha" → adds a categorized note
+- "log a call with Nikhil about the launch" → logs an interaction
+- "remind me to buy flowers for Priya at the grocery" → creates a place errand
+- "who should I reconnect with?" → reads back who's overdue
+- "add Meera as a friend", "who likes coffee?", "open insights" → and more
+
+Tap-to-talk and an optional always-listen wake-word mode use the Web Speech
+API (`src/components/VoiceAssistant.vue`, `src/lib/assistant.js`); a typed
+fallback covers browsers without speech support. A true always-on wake word
+is best added via a native wake-word engine in the Capacitor build.
+
 ### 📍 Nearby / context-aware reminders
 
 Save an **errand** for someone tied to a *type of place* — e.g. "matcha for
