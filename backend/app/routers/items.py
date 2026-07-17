@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from sqlalchemy import or_
@@ -33,6 +33,8 @@ def _owned(db: Session, item_id: str, user: User) -> Item:
 def list_items(
     location_id: str | None = None,
     status_filter: str | None = None,
+    limit: int = Query(200, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -41,7 +43,7 @@ def list_items(
         q = q.filter(Item.location_id == location_id)
     if status_filter:
         q = q.filter(Item.status == status_filter)
-    return q.order_by(Item.created_at.desc()).all()
+    return q.order_by(Item.created_at.desc()).offset(offset).limit(limit).all()
 
 
 @router.get("/check", response_model=OwnershipCheck)

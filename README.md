@@ -40,11 +40,18 @@ by a time-ordered UUIDv7, IDs as the contract between modules).
 
 | Layer | Tech |
 |---|---|
-| Backend | Python · FastAPI · SQLAlchemy 2.0 · Pydantic v2 |
-| Auth | JWT (PyJWT) + pbkdf2 password hashing |
-| AI | Claude vision via the Anthropic SDK (mock fallback) |
-| DB | SQLite (prototype) — Postgres-ready, same UUID contracts |
-| Frontend | React 18 · React Router · Vite |
+| Backend | Python · FastAPI · SQLAlchemy 2.0 · Pydantic v2 · Gunicorn/Uvicorn |
+| Auth | JWT (PyJWT) + pbkdf2 hashing; short-lived media tokens for image URLs |
+| AI | Claude vision + task planning via the Anthropic SDK (mock fallback) |
+| DB | PostgreSQL + Alembic migrations (SQLite for local dev) |
+| Storage | Pluggable — local disk (dev) or S3 (prod) |
+| Frontend | React 18 · React Router · Vite (built + served by Nginx) |
+| Ops | Docker Compose · GitHub Actions CI · structured JSON logs · health/ready probes |
+
+**Production-ready:** see [`DEPLOYMENT.md`](DEPLOYMENT.md) — `docker compose up` brings up
+Postgres + backend + frontend. Security hardening (env-locked CORS, security headers,
+enforced secrets, media-token image URLs), Alembic migrations, an automated test suite,
+and CI are all in place.
 
 ---
 
@@ -90,6 +97,27 @@ CORS or environment setup. Open http://localhost:5173 and sign up.
    analytics dashboard.
 
 ---
+
+## Run in production (Docker)
+
+```bash
+cp .env.docker.example .env      # set SECRET_KEY, ADMIN_PASSWORD, POSTGRES_PASSWORD…
+docker compose up --build -d     # Postgres + backend (Gunicorn) + Nginx frontend
+# → http://localhost:8080
+```
+
+Full details in [`DEPLOYMENT.md`](DEPLOYMENT.md).
+
+## Tests
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest                            # auth, items, ownership check, tasks, photos, RBAC
+```
+
+CI (`.github/workflows/ci.yml`) runs the backend tests, the frontend build, and
+both Docker image builds on every push/PR.
 
 ## Project layout
 

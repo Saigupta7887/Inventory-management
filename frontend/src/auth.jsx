@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { api, setToken, getToken } from './api'
+import { api, setToken, getToken, setMediaToken, refreshMediaToken } from './api'
 
 const AuthContext = createContext(null)
 
@@ -16,8 +16,10 @@ export function AuthProvider({ children }) {
     try {
       const me = await api.get('/auth/me')
       setUser(me)
+      await refreshMediaToken()
     } catch {
       setToken(null)
+      setMediaToken(null)
       setUser(null)
     } finally {
       setLoading(false)
@@ -26,6 +28,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     refresh()
+    // Media tokens expire after ~60 min; refresh well before that.
+    const id = setInterval(() => {
+      if (getToken()) refreshMediaToken()
+    }, 45 * 60 * 1000)
+    return () => clearInterval(id)
   }, [])
 
   async function login(email, password) {
@@ -42,6 +49,7 @@ export function AuthProvider({ children }) {
 
   function logout() {
     setToken(null)
+    setMediaToken(null)
     setUser(null)
   }
 

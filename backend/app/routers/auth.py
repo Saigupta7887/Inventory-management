@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..auth import create_access_token, hash_password, verify_password
+from ..auth import (
+    create_access_token,
+    create_media_token,
+    hash_password,
+    verify_password,
+)
 from ..database import get_db
 from ..deps import get_current_user
 from ..models import User
@@ -39,3 +44,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)):
     return user
+
+
+@router.post("/media-token", response_model=TokenResponse)
+def media_token(user: User = Depends(get_current_user)):
+    """Mint a short-lived, read-only token for use in image URLs."""
+    return TokenResponse(access_token=create_media_token(user.id))

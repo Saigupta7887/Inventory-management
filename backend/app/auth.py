@@ -21,16 +21,35 @@ def verify_password(password: str, password_hash: str) -> bool:
     return pwd_context.verify(password, password_hash)
 
 
-def create_access_token(user_id: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {"sub": user_id, "exp": expire}
+def _encode(user_id: str, scope: str, minutes: int) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    payload = {"sub": user_id, "scope": scope, "exp": expire}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
-def decode_token(token: str) -> str | None:
-    """Return the user id (sub) from a valid token, else None."""
+def create_access_token(user_id: str) -> str:
+    """Full session token used for API calls (sent in the Authorization header)."""
+    return _encode(user_id, "session", settings.access_token_expire_minutes)
+
+
+def create_media_token(user_id: str) -> str:
+    """Short-lived, read-only token used ONLY in image URLs.
+
+    Keeps the long-lived session token out of URLs (which leak into browser
+    history, referrer headers and server logs).
+    """
+    return _encode(user_id, "media", settings.media_token_expire_minutes)
+
+
+def decode_token(token: str, *, scopes: set[str] | None = None) -> str | None:
+    """Return the user id (sub) from a valid token, else None.
+
+    If `scopes` is given, the token's scope must be in that set.
+    """
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        return payload.get("sub")
     except jwt.PyJWTError:
         return None
+    if scopes is not None and payload.get("scope") not in scopes:
+        return None
+    return payload.get("sub")

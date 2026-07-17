@@ -1,8 +1,7 @@
 import io
-import os
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -13,12 +12,14 @@ from ..database import get_db
 from ..deps import bearer_scheme, get_current_user
 from ..models import Category, Detection, Item, Photo, User
 from ..schemas import AcceptDetectionsRequest, DetectionOut, ItemOut, PhotoOut
+from ..storage import get_storage
 from ..vision import detect_tools
 
 router = APIRouter(prefix="/photos", tags=["photos"])
 settings = get_settings()
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_UPLOAD_BYTES = 15 * 1024 * 1024  # 15 MB
 
 
 def _owned_photo(db: Session, photo_id: str, user: User) -> Photo:
@@ -34,8 +35,9 @@ def _thumb_key(storage_key: str) -> str:
 
 
 def _resolve_photo(db: Session, photo_id: str, token: str | None) -> Photo:
-    """Resolve a photo for an <img> request (token via header or ?t= param)."""
-    user_id = decode_token(token) if token else None
+    """Resolve a photo for an <img> request. Accepts a session OR media token
+    (media tokens are short-lived and used only in image URLs)."""
+    user_id = decode_token(token, scopes={"session", "media"}) if token else None
     if user_id is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
     photo = db.get(Photo, photo_id)
@@ -58,8 +60,10 @@ def upload_photo(
     data = file.file.read()
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Empty file")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Image too large (max 15 MB)")
 
-    os.makedirs(settings.upload_dir, exist_ok=True)
+    storage = get_storage()
     photo = Photo(
         owner_id=user.id,
         location_id=location_id or None,
@@ -69,8 +73,7 @@ def upload_photo(
     ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}[content_type]
     photo.storage_key = f"{photo.id}.{ext}"
 
-    with open(os.path.join(settings.upload_dir, photo.storage_key), "wb") as f:
-        f.write(data)
+    storage.save(photo.storage_key, data, content_type)
 
     # Best-effort image dimensions + a small thumbnail for fast grids.
     try:
@@ -80,7 +83,9 @@ def upload_photo(
             photo.width, photo.height = img.size
             thumb = img.convert("RGB")
             thumb.thumbnail((480, 480))
-            thumb.save(os.path.join(settings.upload_dir, _thumb_key(photo.storage_key)), "JPEG", quality=82)
+            buf = io.BytesIO()
+            thumb.save(buf, "JPEG", quality=82)
+            storage.save(_thumb_key(photo.storage_key), buf.getvalue(), "image/jpeg")
     except Exception:
         pass
 
@@ -103,10 +108,10 @@ def get_photo_file(
     # the image can be shown directly in an <img> tag (which can't set headers).
     token = credentials.credentials if credentials else t
     photo = _resolve_photo(db, photo_id, token)
-    path = os.path.join(settings.upload_dir, photo.storage_key)
-    if not os.path.exists(path):
+    storage = get_storage()
+    if not storage.exists(photo.storage_key):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "File missing")
-    return FileResponse(path, media_type=photo.content_type)
+    return storage.response(photo.storage_key, photo.content_type)
 
 
 @router.get("/{photo_id}/thumb")
@@ -119,28 +124,27 @@ def get_photo_thumb(
     """Serve the small thumbnail (falls back to the original if none exists)."""
     token = credentials.credentials if credentials else t
     photo = _resolve_photo(db, photo_id, token)
-    thumb_path = os.path.join(settings.upload_dir, _thumb_key(photo.storage_key))
-    if os.path.exists(thumb_path):
-        return FileResponse(thumb_path, media_type="image/jpeg")
-    path = os.path.join(settings.upload_dir, photo.storage_key)
-    if not os.path.exists(path):
+    storage = get_storage()
+    thumb_key = _thumb_key(photo.storage_key)
+    if storage.exists(thumb_key):
+        return storage.response(thumb_key, "image/jpeg")
+    if not storage.exists(photo.storage_key):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "File missing")
-    return FileResponse(path, media_type=photo.content_type)
+    return storage.response(photo.storage_key, photo.content_type)
 
 
 @router.post("/{photo_id}/detect", response_model=list[DetectionOut])
 def detect(photo_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Run vision detection on the photo and store pending detections."""
     photo = _owned_photo(db, photo_id, user)
-    path = os.path.join(settings.upload_dir, photo.storage_key)
-    if not os.path.exists(path):
+    storage = get_storage()
+    if not storage.exists(photo.storage_key):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "File missing")
 
     photo.status = "processing"
     db.commit()
 
-    with open(path, "rb") as f:
-        image_bytes = f.read()
+    image_bytes = storage.read(photo.storage_key)
 
     results, engine = detect_tools(image_bytes, photo.content_type)
 
