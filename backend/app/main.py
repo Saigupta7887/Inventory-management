@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .database import Base, SessionLocal, engine
-from .routers import admin, auth, categories, items, locations, photos, search
+from .routers import admin, auth, categories, items, locations, photos, search, tasks
 from .seed import seed
 
 settings = get_settings()
@@ -39,6 +39,7 @@ app.include_router(categories.router)
 app.include_router(items.router)
 app.include_router(photos.router)
 app.include_router(search.router)
+app.include_router(tasks.router)
 app.include_router(admin.router)
 
 

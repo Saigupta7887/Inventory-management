@@ -53,3 +53,12 @@ export const IconSpark = (p) => (
 export const IconWrench = (p) => (
   <svg {...base} {...p}><path d="M15.3 8.7a4 4 0 0 1-5-5l2.7 2.7 2.3-.4.4-2.3-2.7-2.7a4 4 0 0 1 5 5l6 6a2 2 0 0 1-2.8 2.8z"/></svg>
 )
+export const IconGuide = (p) => (
+  <svg {...base} {...p}><path d="M9 5h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+)
+export const IconPlay = (p) => (
+  <svg {...base} {...p}><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor" stroke="none"/></svg>
+)
+export const IconX = (p) => (
+  <svg {...base} {...p}><path d="M18 6 6 18M6 6l12 12"/></svg>
+)

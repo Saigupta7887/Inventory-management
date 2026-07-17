@@ -22,6 +22,11 @@ by a time-ordered UUIDv7, IDs as the contract between modules).
 - **"Before you buy" check (core):** search a tool and get a clear verdict —
   *"You already own 1 in Garage Pegboard"* vs *"safe to buy"* — so you never
   buy a duplicate. (`GET /items/check`)
+- **"How do I…?" task assistant:** describe a job in plain language
+  ("change my car tire") → get the **tools it needs** (checked against your
+  inventory: ✓ owned + where, ✗ missing), **step-by-step instructions**,
+  **safety tips**, and a **how-to video**. Uses Claude when a key is set, with
+  a built-in knowledge base + generic fallback otherwise. (`POST /tasks/plan`)
 - **Fast image thumbnails:** small JPEG thumbnails are generated on upload and
   served to grids/cards for quick loading. (`GET /photos/{id}/thumb`)
 - **🧰 Inventory management:** add/edit/move tools, statuses (available,
@@ -118,6 +123,7 @@ docs/SPEC.md           # product & architecture specification
 | Items | `GET/POST /items` · `GET/PATCH/DELETE /items/{id}` · `GET /items/check?q=...` ("before you buy") |
 | Photos / AI | `POST /photos` · `POST /photos/{id}/detect` · `POST /photos/{id}/accept` · `GET /photos/{id}/file` · `GET /photos/{id}/thumb` |
 | Search | `GET /search?q=...` |
+| Task assistant | `POST /tasks/plan` (body `{"task": "change my car tire"}`) |
 | Admin | `GET /admin/users` · `GET /admin/analytics` |
 
 All resources are addressed by UUID.

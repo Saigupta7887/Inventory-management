@@ -1,12 +1,13 @@
 import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth'
-import { Logo, IconGrid, IconCamera, IconSearch, IconBox, IconPin, IconSpark, IconLogout } from './icons'
+import { Logo, IconGrid, IconCamera, IconSearch, IconBox, IconPin, IconSpark, IconLogout, IconGuide } from './icons'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Locations from './pages/Locations'
 import Items from './pages/Items'
 import Scan from './pages/Scan'
 import Search from './pages/Search'
+import Guide from './pages/Guide'
 import Admin from './pages/Admin'
 
 function Nav() {
@@ -24,6 +25,7 @@ function Nav() {
         {link('/', IconGrid, 'Dashboard', true)}
         {link('/scan', IconCamera, 'Scan')}
         {link('/search', IconSearch, 'Find')}
+        {link('/guide', IconGuide, 'How-to')}
         {link('/items', IconBox, 'Items')}
         {link('/locations', IconPin, 'Locations')}
         {user?.role === 'admin' && link('/admin', IconSpark, 'Admin')}
@@ -58,6 +60,7 @@ export default function App() {
       <Route path="/" element={<Protected><Dashboard /></Protected>} />
       <Route path="/scan" element={<Protected><Scan /></Protected>} />
       <Route path="/search" element={<Protected><Search /></Protected>} />
+      <Route path="/guide" element={<Protected><Guide /></Protected>} />
       <Route path="/items" element={<Protected><Items /></Protected>} />
       <Route path="/locations" element={<Protected><Locations /></Protected>} />
       <Route path="/admin" element={<Protected><Admin /></Protected>} />

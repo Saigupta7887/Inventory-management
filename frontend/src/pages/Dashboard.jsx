@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { IconBox, IconPin, IconCheck, IconArrow, IconCamera, IconSearch, IconWrench } from '../icons'
+import { IconBox, IconPin, IconCheck, IconArrow, IconCamera, IconSearch, IconGuide } from '../icons'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -24,8 +24,8 @@ export default function Dashboard() {
   ]
   const actions = [
     { to: '/scan', icon: IconCamera, title: 'Scan a location', desc: 'Photograph a desk or drawer and let AI list the tools.' },
-    { to: '/search', icon: IconSearch, title: 'Find a tool', desc: 'Ask “where is my hammer?” and get the location.' },
-    { to: '/items', icon: IconWrench, title: 'Manage inventory', desc: 'Add, move, lend, or retire tools by hand.' },
+    { to: '/search', icon: IconSearch, title: 'Find a tool', desc: 'Ask “do I own a hammer?” before you buy another.' },
+    { to: '/guide', icon: IconGuide, title: 'How do I…?', desc: 'Get the tools + steps for a job, e.g. change a tire.' },
   ]
 
   return (

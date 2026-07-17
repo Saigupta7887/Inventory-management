@@ -150,6 +150,34 @@ class OwnershipCheck(BaseModel):
     message: str
 
 
+# ---- Task assistant ("how do I …") ----
+class TaskPlanRequest(BaseModel):
+    task: str
+
+
+class TaskToolNeed(BaseModel):
+    name: str
+    category: str
+    essential: bool
+    owned: bool
+    location_name: str | None
+    item_id: str | None
+
+
+class TaskPlanResponse(BaseModel):
+    task: str
+    title: str
+    tools: list[TaskToolNeed]
+    steps: list[str]
+    safety: list[str]
+    ready: bool
+    missing_essential: int
+    missing_total: int
+    video_query: str
+    video_url: str
+    engine: str
+
+
 # ---- Admin ----
 class AdminAnalytics(BaseModel):
     total_users: int
