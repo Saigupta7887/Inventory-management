@@ -11,8 +11,14 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String(255))
+    # Null for social-login users who never set a password.
+    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Auth source: email | google | apple
+    provider: Mapped[str] = mapped_column(String(20), default="email")
+    provider_sub: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     # Onboarding preferences (Phase 1)
     reminder_style: Mapped[str] = mapped_column(String(20), default="balanced")

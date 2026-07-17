@@ -17,7 +17,13 @@ frontend/.env
 # Node
 node_modules/
 dist/
+dev-dist/
 .vite/
+
+# Capacitor native projects (generated via `npx cap add ...`)
+frontend/ios/
+frontend/android/
+.capacitor/
 
 # Editor / OS
 .DS_Store

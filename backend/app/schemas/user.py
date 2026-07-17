@@ -21,12 +21,23 @@ class UserPreferences(BaseModel):
     full_name: str | None = None
 
 
+class GoogleAuthIn(BaseModel):
+    credential: str  # the Google ID token from Google Identity Services
+
+
+class AppleAuthIn(BaseModel):
+    identity_token: str
+    full_name: str | None = None  # Apple only provides this on first sign-in
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     email: EmailStr
     full_name: str | None
+    provider: str
+    avatar_url: str | None
     reminder_style: str
     ai_suggestions_enabled: bool
     onboarded: bool

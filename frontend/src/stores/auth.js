@@ -34,6 +34,21 @@ export const useAuthStore = defineStore('auth', {
       this.user = data.user
       return data.user
     },
+    async loginGoogle(credential) {
+      const { data } = await client.post('/api/auth/google', { credential })
+      this._setToken(data.access_token)
+      this.user = data.user
+      return data.user
+    },
+    async loginApple(identityToken, fullName) {
+      const { data } = await client.post('/api/auth/apple', {
+        identity_token: identityToken,
+        full_name: fullName || null,
+      })
+      this._setToken(data.access_token)
+      this.user = data.user
+      return data.user
+    },
     async fetchMe() {
       if (!this.token) return null
       const { data } = await client.get('/api/auth/me')

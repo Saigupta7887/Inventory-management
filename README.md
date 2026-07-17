@@ -13,7 +13,32 @@ the same design can later wrap into a native shell.
 - **Backend:** Python · FastAPI · SQLAlchemy 2
 - **Frontend:** Vue 3 · Vite · Pinia · Vue Router
 - **Database:** PostgreSQL
-- **Auth:** JWT (bcrypt-hashed passwords)
+- **Auth:** email/password (JWT + bcrypt) **and Sign in with Google / Apple**
+- **Runs everywhere:** responsive web · installable **PWA** · **native iOS/Android** (Capacitor)
+
+## One app, every platform
+
+The same Vue codebase runs three ways:
+
+| Target | How | Notes |
+|--------|-----|-------|
+| **Responsive web** | `npm run dev` | Sidebar layout on desktop, bottom-tab phone UI on mobile |
+| **PWA (installable)** | built automatically (`vite-plugin-pwa`) | "Add to Home Screen" on phone/desktop; offline shell + service worker |
+| **Native iOS / Android** | Capacitor — see [`frontend/NATIVE.md`](frontend/NATIVE.md) | Wraps the web build into real App Store / Play Store apps |
+
+## Authentication
+
+- **Email + password** — works out of the box.
+- **Sign in with Google / Apple** — fully wired; the buttons appear only once you
+  provide OAuth client IDs. Real Google/Apple login needs credentials **you**
+  create in the Google Cloud Console and Apple Developer portal (nobody can do
+  this without them). Setup:
+  - Backend: set `GOOGLE_CLIENT_ID` and/or `APPLE_CLIENT_IDS` in `backend/.env`
+    (see `backend/.env.example`). The backend cryptographically verifies each
+    provider's identity token before issuing a Bondly JWT.
+  - Frontend: set `VITE_GOOGLE_CLIENT_ID` / `VITE_APPLE_CLIENT_ID` in
+    `frontend/.env` (see `frontend/.env.example`).
+  - `GET /api/auth/providers` reports which providers are enabled.
 
 ### 📍 Nearby / context-aware reminders
 
@@ -80,7 +105,7 @@ The product blueprint's phases are implemented as follows:
 
 | Phase | Feature | Where |
 |-------|---------|-------|
-| 1 | Onboarding, auth, preferences | `backend/app/api/routes/auth.py`, `frontend/.../Login.vue`, `Onboarding.vue` |
+| 1 | Onboarding, auth, preferences, **Google/Apple sign-in** | `backend/app/api/routes/auth.py`, `services/oauth.py`, `frontend/.../Login.vue`, `SocialAuth.vue`, `Onboarding.vue` |
 | 2 | Add person, priority, reminder interval | `models/person.py`, `routes/people.py`, `People.vue` |
 | 3 | Notes + AI categorization + pinning | `models/note.py`, `services/ai.py`, `PersonProfile.vue` |
 | 4 | Interaction tracking (channel, mood, follow-up) | `models/interaction.py`, `routes/people.py` |

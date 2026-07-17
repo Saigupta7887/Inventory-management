@@ -1,0 +1,11 @@
+{
+  "appId": "app.bondly.mobile",
+  "appName": "Bondly",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

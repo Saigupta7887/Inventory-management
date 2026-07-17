@@ -78,6 +78,43 @@ def test_auth_required(client):
     assert client.get("/api/people").status_code == 401
 
 
+def test_providers_endpoint(client):
+    # No client IDs configured in tests -> both disabled, but endpoint works.
+    r = client.get("/api/auth/providers")
+    assert r.status_code == 200
+    assert r.json() == {"google": False, "apple": False}
+
+
+def test_google_login_creates_and_reuses_user(client, monkeypatch):
+    # Mock the token verifier so we don't call Google.
+    profile = {"sub": "g-123", "email": "social@example.com", "name": "Soc", "picture": "http://x/y.png"}
+    monkeypatch.setattr(
+        "app.api.routes.auth.verify_google_token", lambda credential: profile
+    )
+
+    r = client.post("/api/auth/google", json={"credential": "fake-token"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["user"]["email"] == "social@example.com"
+    assert body["user"]["provider"] == "google"
+    token = body["access_token"]
+
+    # The JWT works against a protected route.
+    me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert me.status_code == 200
+    assert me.json()["avatar_url"] == "http://x/y.png"
+
+    # Signing in again reuses the same user (no duplicate).
+    r2 = client.post("/api/auth/google", json={"credential": "fake-token"})
+    assert r2.json()["user"]["id"] == body["user"]["id"]
+
+
+def test_google_login_disabled_returns_503(client):
+    # Real verifier runs; no GOOGLE_CLIENT_ID configured -> not configured.
+    r = client.post("/api/auth/google", json={"credential": "whatever"})
+    assert r.status_code == 503
+
+
 def test_location_feature(client):
     h = _auth(client)
 

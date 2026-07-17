@@ -91,20 +91,22 @@ async function onCreated() {
       {{ searchIds ? 'No matches.' : 'No people yet — tap + to add someone.' }}
     </p>
 
-    <RouterLink
-      v-for="p in list"
-      :key="p.id"
-      :to="{ name: 'person', params: { id: p.id } }"
-      class="row"
-    >
-      <Avatar :name="p.name" :size="48" />
-      <div class="grow">
-        <strong>{{ p.name }}</strong>
-        <div class="muted rel">{{ p.relationship_type || 'Contact' }}</div>
-        <div class="muted small">{{ daysAgo(p.last_interaction_at) }}</div>
-      </div>
-      <span class="pill" :class="p.priority">{{ p.priority.replace('_', ' ') }}</span>
-    </RouterLink>
+    <div class="people-list">
+      <RouterLink
+        v-for="p in list"
+        :key="p.id"
+        :to="{ name: 'person', params: { id: p.id } }"
+        class="row"
+      >
+        <Avatar :name="p.name" :size="48" />
+        <div class="grow">
+          <strong>{{ p.name }}</strong>
+          <div class="muted rel">{{ p.relationship_type || 'Contact' }}</div>
+          <div class="muted small">{{ daysAgo(p.last_interaction_at) }}</div>
+        </div>
+        <span class="pill" :class="p.priority">{{ p.priority.replace('_', ' ') }}</span>
+      </RouterLink>
+    </div>
 
     <PersonForm v-if="showForm" @close="showForm = false" @created="onCreated" />
   </div>
@@ -135,4 +137,19 @@ async function onCreated() {
 .row strong { font-size: 16px; }
 .rel { font-size: 13px; }
 .small { font-size: 12px; }
+
+/* Desktop: two-column card grid instead of a single list. */
+@media (min-width: 900px) {
+  .people-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  .people-list .row {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+}
 </style>

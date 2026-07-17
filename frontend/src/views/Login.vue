@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import BrandMark from '@/components/BrandMark.vue'
+import SocialAuth from '@/components/SocialAuth.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -64,6 +65,8 @@ async function submit() {
         {{ busy ? 'Please wait…' : mode === 'register' ? 'Create account' : 'Log in' }}
       </button>
     </form>
+
+    <SocialAuth />
   </div>
 </template>
 

@@ -5,18 +5,60 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
-from app.schemas.user import Token, UserCreate, UserOut, UserPreferences
+from app.schemas.user import (
+    AppleAuthIn,
+    GoogleAuthIn,
+    Token,
+    UserCreate,
+    UserOut,
+    UserPreferences,
+)
+from app.services.oauth import (
+    OAuthError,
+    OAuthNotConfigured,
+    verify_apple_token,
+    verify_google_token,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 def _authenticate(db: Session, email: str, password: str) -> User | None:
     user = db.scalar(select(User).where(User.email == email))
-    if user and verify_password(password, user.hashed_password):
+    if user and user.hashed_password and verify_password(password, user.hashed_password):
         return user
     return None
+
+
+def _find_or_create_social_user(
+    db: Session, profile: dict, provider: str
+) -> User:
+    """Find a user by email or create one from a verified social profile."""
+    user = db.scalar(select(User).where(User.email == profile["email"]))
+    if user is None:
+        user = User(
+            email=profile["email"],
+            full_name=profile.get("name"),
+            avatar_url=profile.get("picture"),
+            provider=provider,
+            provider_sub=profile.get("sub"),
+            onboarded=False,
+        )
+        db.add(user)
+    else:
+        # Link the social identity to the existing account.
+        if not user.provider_sub:
+            user.provider_sub = profile.get("sub")
+        if user.provider == "email":
+            user.provider = provider
+        if not user.avatar_url and profile.get("picture"):
+            user.avatar_url = profile["picture"]
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
@@ -52,6 +94,43 @@ def login(
         )
     token = create_access_token(user.id)
     return Token(access_token=token, user=UserOut.model_validate(user))
+
+
+@router.get("/providers")
+def providers() -> dict:
+    """Which social providers are configured — lets the UI show the right buttons."""
+    return {
+        "google": bool(settings.google_client_id),
+        "apple": bool(settings.apple_client_id_list),
+    }
+
+
+@router.post("/google", response_model=Token)
+def google_login(payload: GoogleAuthIn, db: Session = Depends(get_db)) -> Token:
+    try:
+        profile = verify_google_token(payload.credential)
+    except OAuthNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except OAuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+    user = _find_or_create_social_user(db, profile, "google")
+    return Token(access_token=create_access_token(user.id), user=UserOut.model_validate(user))
+
+
+@router.post("/apple", response_model=Token)
+def apple_login(payload: AppleAuthIn, db: Session = Depends(get_db)) -> Token:
+    try:
+        profile = verify_apple_token(payload.identity_token)
+    except OAuthNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except OAuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+    if payload.full_name and not profile.get("name"):
+        profile["name"] = payload.full_name
+    user = _find_or_create_social_user(db, profile, "apple")
+    return Token(access_token=create_access_token(user.id), user=UserOut.model_validate(user))
 
 
 @router.get("/me", response_model=UserOut)
