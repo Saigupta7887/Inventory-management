@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -33,6 +33,11 @@ class Person(Base):
 
     tags: Mapped[str | None] = mapped_column(Text, nullable=True)  # comma-separated
 
+    # Where this person is based (Phase 10 — nearby / context-aware reminders).
+    location_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     last_interaction_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -48,5 +53,8 @@ class Person(Base):
         back_populates="person", cascade="all, delete-orphan"
     )
     reminders: Mapped[list["Reminder"]] = relationship(  # noqa: F821
+        back_populates="person", cascade="all, delete-orphan"
+    )
+    errands: Mapped[list["Errand"]] = relationship(  # noqa: F821
         back_populates="person", cascade="all, delete-orphan"
     )

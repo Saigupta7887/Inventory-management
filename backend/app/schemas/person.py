@@ -14,6 +14,9 @@ class PersonBase(BaseModel):
     preferred_contact_method: str | None = None
     reminder_interval_days: int = 30
     tags: str | None = None
+    location_label: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class PersonCreate(PersonBase):
@@ -31,6 +34,9 @@ class PersonUpdate(BaseModel):
     preferred_contact_method: str | None = None
     reminder_interval_days: int | None = None
     tags: str | None = None
+    location_label: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class PersonOut(PersonBase):

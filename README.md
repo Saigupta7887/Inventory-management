@@ -4,10 +4,28 @@
 close to the people who matter — remember the details about them, track your
 interactions, and get gentle nudges to reconnect before too much time passes.
 
+The frontend is a **mobile-first** web app built to match the product's screen
+designs: a phone-shaped layout with a bottom tab bar (Home · People · ➕ ·
+Reminders · Insights), a warm purple/pink aesthetic, tabbed profiles, an emoji
+mood picker, and a donut "Relationship Health" ring. It runs in any browser and
+the same design can later wrap into a native shell.
+
 - **Backend:** Python · FastAPI · SQLAlchemy 2
 - **Frontend:** Vue 3 · Vite · Pinia · Vue Router
 - **Database:** PostgreSQL
 - **Auth:** JWT (bcrypt-hashed passwords)
+
+### 📍 Nearby / context-aware reminders
+
+Save an **errand** for someone tied to a *type of place* — e.g. "matcha for
+Sarah" at a **grocery**. When you're near that kind of place, Bondly surfaces it:
+
+- **GPS auto-detect** — uses the browser's geolocation to find saved places
+  within range and shows their matching errands, plus contacts based nearby.
+  (True background "you walked into a store" alerts need a native app; the web
+  app detects when you open the Nearby screen.)
+- **Manual check-in** — tap "I'm at a grocery" and get the relevant errands.
+- Save your current spot as a place so GPS recognizes it next time.
 
 ---
 
@@ -71,7 +89,7 @@ The product blueprint's phases are implemented as follows:
 | 7 | Dashboard (needs attention / events / activity) | `routes/dashboard.py`, `Dashboard.vue` |
 | 8 | Insights (health score, trends) | `routes/insights.py`, `Insights.vue` |
 | 9 | Natural-language-ish search | `routes/search.py`, `People.vue` search bar |
-| 10 | Future features | see **Roadmap** below |
+| 10 | Context-aware / nearby reminders | `models/place.py`, `models/errand.py`, `services/location.py`, `routes/nearby.py`, `Nearby.vue`, `ErrandNew.vue` |
 
 ### A note on the "AI" layer
 

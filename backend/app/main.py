@@ -6,8 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import (
     auth,
     dashboard,
+    errands,
     insights,
+    nearby,
     people,
+    places,
     reminders,
     search,
 )
@@ -42,6 +45,9 @@ app.include_router(reminders.router)
 app.include_router(dashboard.router)
 app.include_router(insights.router)
 app.include_router(search.router)
+app.include_router(places.router)
+app.include_router(errands.router)
+app.include_router(nearby.router)
 
 
 @app.get("/health", tags=["meta"])

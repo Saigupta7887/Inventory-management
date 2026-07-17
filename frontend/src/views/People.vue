@@ -1,201 +1,138 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { usePeopleStore } from '@/stores/people'
 import client from '@/api/client'
+import Avatar from '@/components/Avatar.vue'
+import PersonForm from '@/components/PersonForm.vue'
 
 const store = usePeopleStore()
-const showForm = ref(false)
-const query = ref('')
-const searchResults = ref(null)
+const route = useRoute()
 
-const form = ref({
-  name: '',
-  relationship_type: 'friend',
-  priority: 'medium',
-  reminder_interval_days: 30,
-  email: '',
-  phone: '',
-  birthday: '',
-  tags: '',
+const query = ref('')
+const searchIds = ref(null)
+const filter = ref('all')
+const showForm = ref(false)
+
+const filters = ['all', 'family', 'friends', 'work', 'partner', 'mentors']
+
+onMounted(async () => {
+  await store.fetchAll()
+  if (route.query.add) showForm.value = true
 })
 
-onMounted(() => store.fetchAll())
-
-const filtered = computed(() => {
-  if (searchResults.value) {
-    const ids = new Set(searchResults.value.map((r) => r.person_id))
-    return store.people.filter((p) => ids.has(p.id))
+const list = computed(() => {
+  let items = store.people
+  if (searchIds.value) {
+    const ids = new Set(searchIds.value)
+    items = items.filter((p) => ids.has(p.id))
   }
-  return store.people
+  if (filter.value !== 'all') {
+    items = items.filter(
+      (p) => (p.relationship_type || '').toLowerCase().startsWith(filter.value.slice(0, 4)),
+    )
+  }
+  return items
 })
 
 async function runSearch() {
   if (!query.value.trim()) {
-    searchResults.value = null
+    searchIds.value = null
     return
   }
   const { data } = await client.get('/api/search', { params: { q: query.value } })
-  searchResults.value = data.results
+  searchIds.value = data.results.map((r) => r.person_id)
 }
 
-async function addPerson() {
-  const payload = { ...form.value }
-  if (!payload.birthday) delete payload.birthday
-  await store.create(payload)
+function daysAgo(dt) {
+  if (!dt) return 'No contact yet'
+  const d = Math.floor((Date.now() - new Date(dt)) / 86400000)
+  return d === 0 ? 'Talked today' : `Last talked ${d} day${d === 1 ? '' : 's'} ago`
+}
+
+async function onCreated() {
   showForm.value = false
-  form.value = {
-    name: '',
-    relationship_type: 'friend',
-    priority: 'medium',
-    reminder_interval_days: 30,
-    email: '',
-    phone: '',
-    birthday: '',
-    tags: '',
-  }
 }
 </script>
 
 <template>
   <div>
-    <div class="head">
+    <header class="head">
       <h1>People</h1>
-      <button class="btn" @click="showForm = !showForm">＋ Add person</button>
-    </div>
+      <button class="add" @click="showForm = true">+</button>
+    </header>
 
-    <div class="searchbar card">
+    <div class="search">
+      <span class="mag">🔍</span>
       <input
         v-model="query"
-        class="input"
-        placeholder="Search — try “who likes coffee” or “who mentioned interviews”"
+        class="sinput"
+        placeholder="Search people…"
         @keyup.enter="runSearch"
+        @input="query || (searchIds = null)"
       />
-      <button class="btn secondary" @click="runSearch">Search</button>
-      <button v-if="searchResults" class="btn ghost" @click="query = ''; searchResults = null">
-        Clear
+      <button class="filt" @click="runSearch">⌕</button>
+    </div>
+
+    <div class="chips">
+      <button
+        v-for="f in filters"
+        :key="f"
+        class="chip"
+        :class="{ active: filter === f }"
+        @click="filter = f"
+      >
+        {{ f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1) }}
       </button>
     </div>
 
-    <form v-if="showForm" class="card form" @submit.prevent="addPerson">
-      <div class="row">
-        <div class="field">
-          <label class="label">Name *</label>
-          <input v-model="form.name" class="input" required />
-        </div>
-        <div class="field">
-          <label class="label">Relationship</label>
-          <select v-model="form.relationship_type" class="select">
-            <option>family</option>
-            <option>friend</option>
-            <option>partner</option>
-            <option>work</option>
-            <option>networking</option>
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <div class="field">
-          <label class="label">Priority</label>
-          <select v-model="form.priority" class="select">
-            <option value="very_high">Very high</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="label">Remind me every (days)</label>
-          <input v-model.number="form.reminder_interval_days" type="number" min="1" class="input" />
-        </div>
-      </div>
-      <div class="row">
-        <div class="field">
-          <label class="label">Email</label>
-          <input v-model="form.email" class="input" />
-        </div>
-        <div class="field">
-          <label class="label">Birthday</label>
-          <input v-model="form.birthday" type="date" class="input" />
-        </div>
-      </div>
-      <div class="field">
-        <label class="label">Tags (comma-separated)</label>
-        <input v-model="form.tags" class="input" placeholder="coffee, college, mentor" />
-      </div>
-      <button class="btn" type="submit">Save person</button>
-    </form>
-
-    <p v-if="store.loading" class="muted">Loading…</p>
-    <p v-else-if="!filtered.length" class="muted">
-      {{ searchResults ? 'No matches.' : 'No people yet — add your first one above.' }}
+    <p v-if="store.loading" class="spinner">Loading…</p>
+    <p v-else-if="!list.length" class="muted empty">
+      {{ searchIds ? 'No matches.' : 'No people yet — tap + to add someone.' }}
     </p>
 
-    <div class="grid people">
-      <RouterLink
-        v-for="p in filtered"
-        :key="p.id"
-        :to="{ name: 'person', params: { id: p.id } }"
-        class="card person"
-      >
-        <div class="avatar">{{ p.name.charAt(0).toUpperCase() }}</div>
-        <div class="meta">
-          <strong>{{ p.name }}</strong>
-          <div class="muted small">{{ p.relationship_type || 'contact' }}</div>
-        </div>
-        <span class="pill" :class="p.priority">{{ p.priority.replace('_', ' ') }}</span>
-      </RouterLink>
-    </div>
+    <RouterLink
+      v-for="p in list"
+      :key="p.id"
+      :to="{ name: 'person', params: { id: p.id } }"
+      class="row"
+    >
+      <Avatar :name="p.name" :size="48" />
+      <div class="grow">
+        <strong>{{ p.name }}</strong>
+        <div class="muted rel">{{ p.relationship_type || 'Contact' }}</div>
+        <div class="muted small">{{ daysAgo(p.last_interaction_at) }}</div>
+      </div>
+      <span class="pill" :class="p.priority">{{ p.priority.replace('_', ' ') }}</span>
+    </RouterLink>
+
+    <PersonForm v-if="showForm" @close="showForm = false" @created="onCreated" />
   </div>
 </template>
 
 <style scoped>
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.head { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.add {
+  width: 38px; height: 38px; border-radius: 12px;
+  background: var(--primary-050); color: var(--primary);
+  font-size: 24px; font-weight: 700; line-height: 1;
 }
-.searchbar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin: 16px 0;
-  padding: 12px;
+.search {
+  display: flex; align-items: center; gap: 8px;
+  background: #f3f1fa; border-radius: 14px; padding: 4px 12px;
+  margin: 16px 0 14px;
 }
-.searchbar .input {
-  flex: 1;
-}
-.form {
-  margin-bottom: 20px;
-}
+.mag { opacity: 0.6; }
+.sinput { flex: 1; border: none; background: none; padding: 12px 0; font-size: 15px; outline: none; color: var(--text); }
+.filt { color: var(--primary); font-size: 20px; padding: 0 4px; }
+.empty { padding: 30px 4px; text-align: center; }
 .row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--border);
 }
-.people {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-}
-.person {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--primary-soft);
-  color: var(--primary-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-}
-.meta {
-  flex: 1;
-}
-.small {
-  font-size: 13px;
-}
+.row .grow { flex: 1; }
+.row strong { font-size: 16px; }
+.rel { font-size: 13px; }
+.small { font-size: 12px; }
 </style>

@@ -1,6 +1,8 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import client from '@/api/client'
+import Avatar from '@/components/Avatar.vue'
 
 const data = ref(null)
 const loading = ref(true)
@@ -14,98 +16,108 @@ onMounted(async () => {
   }
 })
 
-const scoreColor = computed(() => {
-  const s = data.value?.health_score ?? 0
-  if (s >= 75) return 'var(--success)'
-  if (s >= 45) return 'var(--warning)'
-  return 'var(--danger)'
+// Build a conic-gradient ring from the health breakdown.
+const ring = computed(() => {
+  const b = data.value?.health_breakdown || { healthy: 100, needs_attention: 0, overdue: 0 }
+  const h = b.healthy
+  const n = h + b.needs_attention
+  return `conic-gradient(var(--low-fg) 0 ${h}%, var(--medium-fg) ${h}% ${n}%, var(--high-fg) ${n}% 100%)`
 })
 </script>
 
 <template>
   <div>
-    <h1>Insights</h1>
-    <p class="muted">A pulse on your relationships.</p>
+    <header class="head">
+      <h1>Insights</h1>
+      <div class="period">This Week ▾</div>
+    </header>
 
-    <p v-if="loading" class="muted">Loading…</p>
+    <p v-if="loading" class="spinner">Loading…</p>
 
-    <div v-else class="grid cols">
-      <section class="card score">
-        <div class="ring" :style="{ '--c': scoreColor }">
-          <span>{{ data.health_score }}</span>
+    <template v-else>
+      <div class="card health">
+        <h3>Relationship Health</h3>
+        <div class="hbody">
+          <div class="ring" :style="{ background: ring }">
+            <div class="hole">
+              <span class="pct">{{ data.health_score }}%</span>
+              <span class="muted lbl">Healthy</span>
+            </div>
+          </div>
+          <ul class="legend">
+            <li><span class="d low"></span>Healthy <b>{{ data.health_breakdown.healthy }}%</b></li>
+            <li><span class="d med"></span>Needs Attention <b>{{ data.health_breakdown.needs_attention }}%</b></li>
+            <li><span class="d high"></span>Overdue <b>{{ data.health_breakdown.overdue }}%</b></li>
+          </ul>
         </div>
-        <h3>Relationship health</h3>
-        <p class="muted small">Based on how many people are overdue for a catch-up.</p>
-      </section>
+      </div>
 
-      <section class="card">
-        <h2>👥 By relationship type</h2>
-        <ul class="bars">
-          <li v-for="(count, type) in data.people_by_type" :key="type">
-            <span class="k">{{ type }}</span>
-            <span class="bar"><i :style="{ width: Math.min(count * 24, 100) + '%' }"></i></span>
-            <span class="v">{{ count }}</span>
-          </li>
-        </ul>
-      </section>
+      <h3 class="section">You this week</h3>
+      <div class="tiles">
+        <div class="tile">
+          <div class="num">{{ data.week.people_contacted }}</div>
+          <div class="muted">People Contacted</div>
+        </div>
+        <div class="tile">
+          <div class="num">{{ data.week.followups_completed }}</div>
+          <div class="muted">Follow-ups</div>
+        </div>
+        <div class="tile">
+          <div class="num">{{ data.week.notes_added }}</div>
+          <div class="muted">Notes Added</div>
+        </div>
+      </div>
 
-      <section class="card">
-        <h2>🔥 Most active</h2>
-        <p v-if="!data.most_active.length" class="muted">No interactions logged yet.</p>
-        <ul class="rows">
-          <li v-for="m in data.most_active" :key="m.name">
-            <span>{{ m.name }}</span><span class="muted">{{ m.count }} interactions</span>
-          </li>
-        </ul>
-      </section>
-
-      <section class="card">
-        <h2>🌱 Needs reconnecting</h2>
-        <p v-if="!data.neglected.length" class="muted">Everyone's up to date. 🎉</p>
-        <ul class="rows">
-          <li v-for="n in data.neglected" :key="n.name">
-            <span>{{ n.name }}</span>
-            <span class="muted">{{ n.days_since != null ? n.days_since + ' days' : 'no contact yet' }}</span>
-          </li>
-        </ul>
-      </section>
-    </div>
+      <h3 class="section">People needing your attention</h3>
+      <p v-if="!data.needs_attention.length" class="muted empty">Everyone's up to date. 🎉</p>
+      <RouterLink
+        v-for="p in data.needs_attention"
+        :key="p.person_id"
+        :to="{ name: 'person', params: { id: p.person_id } }"
+        class="row"
+      >
+        <Avatar :name="p.name" :size="44" />
+        <div class="grow">
+          <strong>{{ p.name }}</strong>
+          <div class="muted small">
+            {{ p.days_since != null ? 'Last talked ' + p.days_since + ' days ago' : 'No contact yet' }}
+          </div>
+        </div>
+        <span class="pill" :class="p.priority">{{ p.priority.replace('_', ' ') }}</span>
+      </RouterLink>
+    </template>
   </div>
 </template>
 
 <style scoped>
-.cols { grid-template-columns: 1fr 1fr; margin-top: 18px; }
-@media (max-width: 720px) { .cols { grid-template-columns: 1fr; } }
-.score { text-align: center; }
+.head { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.period { font-size: 13px; font-weight: 700; color: var(--primary); background: var(--primary-050); padding: 8px 12px; border-radius: 10px; }
+.health h3 { margin-bottom: 14px; }
+.hbody { display: flex; align-items: center; gap: 18px; }
 .ring {
-  width: 120px;
-  height: 120px;
-  margin: 4px auto 12px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: conic-gradient(var(--c) calc(v-bind('data.health_score') * 1%), var(--border) 0);
+  width: 120px; height: 120px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.ring span {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  font-weight: 800;
-  color: var(--c);
+.hole {
+  width: 88px; height: 88px; border-radius: 50%; background: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
+.pct { font-size: 26px; font-weight: 800; }
+.lbl { font-size: 12px; }
+.legend { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; font-size: 14px; flex: 1; }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.legend b { margin-left: auto; }
+.d { width: 10px; height: 10px; border-radius: 50%; }
+.d.low { background: var(--low-fg); }
+.d.med { background: var(--medium-fg); }
+.d.high { background: var(--high-fg); }
+.section { margin: 24px 2px 12px; }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tile { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 16px 8px; text-align: center; box-shadow: var(--shadow); }
+.tile .num { font-size: 30px; font-weight: 800; color: var(--primary); }
+.tile .muted { font-size: 12px; margin-top: 4px; }
+.empty { padding: 10px 2px; }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--border); }
+.row .grow { flex: 1; }
 .small { font-size: 13px; }
-.bars { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-.bars li { display: grid; grid-template-columns: 90px 1fr 28px; align-items: center; gap: 8px; }
-.bars .k { text-transform: capitalize; font-size: 13px; color: var(--muted); }
-.bar { background: var(--bg); border-radius: 999px; height: 10px; overflow: hidden; }
-.bar i { display: block; height: 100%; background: var(--primary); border-radius: 999px; }
-.bars .v { text-align: right; font-weight: 700; }
-.rows { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-.rows li { display: flex; justify-content: space-between; }
 </style>

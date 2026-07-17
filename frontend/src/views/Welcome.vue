@@ -1,79 +1,77 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
+import BrandMark from '@/components/BrandMark.vue'
+import Avatar from '@/components/Avatar.vue'
+
+const router = useRouter()
+const floats = ['Aya', 'Ravi', 'Mia', 'Leo', 'Nina']
 </script>
 
 <template>
   <div class="welcome">
-    <div class="hero card">
-      <div class="logo">🤝</div>
-      <h1>Bondly</h1>
-      <p class="tagline">
-        Stay close to the people who matter. Remember the details, never miss a
-        birthday, and always know who to reach out to next.
-      </p>
-      <div class="actions">
-        <RouterLink :to="{ name: 'login' }" class="btn">Get started</RouterLink>
-        <RouterLink :to="{ name: 'login' }" class="btn secondary">I already have an account</RouterLink>
+    <div class="top">
+      <BrandMark :size="64" />
+      <div class="wordmark">bondly</div>
+      <p class="tagline">Remember what<br />matters about people.</p>
+
+      <div class="collage">
+        <span
+          v-for="(n, i) in floats"
+          :key="n"
+          class="float"
+          :class="'f' + i"
+        >
+          <Avatar :name="n" :size="i === 2 ? 60 : 46" />
+        </span>
+        <span class="heart h1">💜</span>
+        <span class="heart h2">🧡</span>
       </div>
     </div>
-    <ul class="features">
-      <li><span>🧠</span> Remember what matters about everyone</li>
-      <li><span>🔔</span> Gentle reminders to reconnect</li>
-      <li><span>📈</span> See the health of your relationships</li>
-    </ul>
+
+    <div class="actions">
+      <button class="btn grad" @click="router.push({ name: 'login', query: { mode: 'register' } })">
+        Get Started
+      </button>
+      <button class="btn outline" @click="router.push({ name: 'login', query: { mode: 'login' } })">
+        Sign In
+      </button>
+      <p class="footer muted">Your relationships. Your story.<br />Always with you.</p>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .welcome {
-  max-width: 560px;
-  margin: 6vh auto 0;
-  text-align: center;
-}
-.hero {
-  padding: 40px 32px;
-}
-.logo {
-  font-size: 56px;
-}
-h1 {
-  font-size: 40px;
-  margin: 8px 0;
-}
-.tagline {
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1.6;
-  margin: 0 auto 28px;
-  max-width: 420px;
-}
-.actions {
+  min-height: calc(100dvh - 40px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  align-items: center;
+  justify-content: space-between;
+  padding: 4vh 4px 3vh;
+  background: radial-gradient(120% 60% at 50% 0%, #f6effe 0%, transparent 70%);
 }
-.actions .btn {
-  width: 260px;
-  justify-content: center;
+.top { text-align: center; }
+.wordmark {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 6px 0 14px;
 }
-.features {
-  list-style: none;
-  padding: 0;
-  margin: 28px auto 0;
-  display: grid;
-  gap: 10px;
-  max-width: 360px;
-  text-align: left;
+.tagline { font-size: 20px; font-weight: 700; line-height: 1.35; }
+.collage {
+  position: relative;
+  height: 210px;
+  margin-top: 24px;
 }
-.features li {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  color: var(--muted);
-  font-weight: 500;
-}
-.features span {
-  font-size: 20px;
-}
+.float { position: absolute; box-shadow: var(--shadow); border-radius: 50%; }
+.float :deep(.avatar) { border: 3px solid #fff; }
+.f0 { top: 40px; left: 26%; transform: translateX(-50%); }
+.f1 { top: 6px; left: 50%; transform: translateX(-50%); }
+.f2 { top: 70px; left: 50%; transform: translateX(-50%); }
+.f3 { top: 6px; right: 22%; }
+.f4 { top: 96px; left: 16%; }
+.heart { position: absolute; font-size: 22px; }
+.h1 { top: 30px; right: 20%; }
+.h2 { bottom: 20px; right: 30%; }
+.actions { display: grid; gap: 12px; padding: 0 4px; }
+.footer { text-align: center; font-size: 13px; margin-top: 8px; line-height: 1.5; }
 </style>
